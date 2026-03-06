@@ -215,15 +215,20 @@ final config = HubtelCheckoutConfiguration(
   callbackUrl: 'https://your-callback-url.com',
 );
 
-// Launch checkout - SDK handles card input and 3DS
-final result = await HubtelCheckout.launch(
-  context: context,
-  purchaseInfo: purchaseInfo,
-  configuration: config,
+// Navigate to checkout screen - SDK handles card input and 3DS
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: config,
+    ),
+  ),
 );
 
-if (result?.status == UnifiedCheckoutPaymentStatus.paid) {
-  print('Card payment successful: ${result?.transactionId}');
+if (result is CheckoutCompletionStatus && 
+    result.status == UnifiedCheckoutPaymentStatus.paymentSuccess) {
+  print('Card payment successful: ${result.transactionId}');
 }
 ```
 
@@ -241,12 +246,16 @@ final savedCards = [
   ),
 ];
 
-// Launch checkout with saved cards
-final result = await HubtelCheckout.launch(
-  context: context,
-  purchaseInfo: purchaseInfo,
-  configuration: config,
-  savedBankCards: savedCards,  // Optional saved cards
+// Navigate to checkout screen with saved cards
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: config,
+      savedBankCards: savedCards,  // Optional saved cards
+    ),
+  ),
 );
 ```
 
@@ -383,30 +392,43 @@ if (channelResponse.requireNationalID == true) {
 ## Error Handling
 
 ```dart
-final result = await HubtelCheckout.launch(
-  context: context,
-  purchaseInfo: purchaseInfo,
-  configuration: config,
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: config,
+    ),
+  ),
 );
 
-switch (result?.status) {
-  case UnifiedCheckoutPaymentStatus.paid:
-    // Payment successful
-    print('Transaction ID: ${result?.transactionId}');
-    break;
-    
-  case UnifiedCheckoutPaymentStatus.failed:
-    // Payment failed - card declined or 3DS failed
-    print('Payment failed');
-    break;
-    
-  case UnifiedCheckoutPaymentStatus.pending:
-    // Payment pending - 3DS in progress
-    print('Awaiting 3DS authentication');
-    break;
-    
-  default:
-    // Handle other statuses
+if (result is CheckoutCompletionStatus) {
+  switch (result.status) {
+    case UnifiedCheckoutPaymentStatus.paymentSuccess:
+      // Payment successful
+      print('Transaction ID: ${result.transactionId}');
+      break;
+      
+    case UnifiedCheckoutPaymentStatus.paymentFailed:
+      // Payment failed - card declined or 3DS failed
+      print('Payment failed');
+      break;
+      
+    case UnifiedCheckoutPaymentStatus.pending:
+      // Payment pending - 3DS in progress
+      print('Awaiting 3DS authentication');
+      break;
+      
+    case UnifiedCheckoutPaymentStatus.userCancelledPayment:
+      // User cancelled checkout
+      print('Payment cancelled');
+      break;
+      
+    case UnifiedCheckoutPaymentStatus.unknown:
+      // Unknown status
+      print('Unknown payment status');
+      break;
+  }
 }
 ```
 

@@ -80,8 +80,7 @@
           {
             "group": "Enums",
             "pages": [
-              "api-reference/unified-checkout-payment-status",
-              "api-reference/payment-status"
+              "api-reference/unified-checkout-payment-status"
             ]
           },
           {

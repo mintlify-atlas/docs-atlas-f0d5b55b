@@ -63,16 +63,21 @@ final config = HubtelCheckoutConfiguration(
   callbackUrl: 'https://your-callback-url.com',
 );
 
-// Launch checkout
-final result = await HubtelCheckout.launch(
-  context: context,
-  purchaseInfo: purchaseInfo,
-  configuration: config,
+// Navigate to checkout screen
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: config,
+    ),
+  ),
 );
 
 // Bank Pay returns pending status
-if (result?.status == UnifiedCheckoutPaymentStatus.pending) {
-  print('Payment slip generated. Transaction ID: ${result?.transactionId}');
+if (result is CheckoutCompletionStatus && 
+    result.status == UnifiedCheckoutPaymentStatus.pending) {
+  print('Payment slip generated. Transaction ID: ${result.transactionId}');
   print('Customer should visit bank with payment slip');
 }
 ```
@@ -192,33 +197,40 @@ Bank Pay payments start with a `pending` status:
 
 Customers can check their payment status using:
 
-1. **Your Application**: Query the payment status using the transaction ID
+1. **Your Application**: The checkout returns with `pending` status after receipt download
 2. **Payment History**: Check within their payment history
 3. **USSD Code**: Dial `*718*108#` for status updates
+4. **Backend Verification**: Use your callback URL to receive payment confirmations
+
+The checkout returns with `UnifiedCheckoutPaymentStatus.pending` for Bank Pay after the receipt is downloaded:
 
 ```dart
-// Check payment status
-final statusResponse = await checkoutViewModel.checkPaymentStatus(
-  transactionId: result.transactionId,
+// Handle Bank Pay completion
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: config,
+    ),
+  ),
 );
 
-switch (statusResponse.status) {
-  case PaymentStatus.paid:
-    // Bank confirmed payment
-    print('Payment confirmed by bank');
-    break;
-  case PaymentStatus.pending:
-    // Still waiting for bank confirmation
-    print('Waiting for bank confirmation');
-    break;
-  case PaymentStatus.failed:
-    // Payment was not made or rejected
-    print('Payment failed');
-    break;
-  case PaymentStatus.expired:
-    // Payment slip expired
-    print('Payment slip expired');
-    break;
+if (result is CheckoutCompletionStatus) {
+  switch (result.status) {
+    case UnifiedCheckoutPaymentStatus.pending:
+      // Bank Pay receipt downloaded
+      // Payment pending bank confirmation
+      print('Payment slip downloaded: ${result.transactionId}');
+      // Check your backend for payment confirmation
+      break;
+    case UnifiedCheckoutPaymentStatus.userCancelledPayment:
+      // User closed checkout without downloading receipt
+      print('Payment cancelled');
+      break;
+    default:
+      break;
+  }
 }
 ```
 
@@ -404,23 +416,31 @@ if (testResult.status == PaymentStatus.paid) {
 ```dart
 // Handle Bank Pay errors
 try {
-  final result = await HubtelCheckout.launch(
-    context: context,
-    purchaseInfo: purchaseInfo,
-    configuration: config,
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => CheckoutScreen(
+        purchaseInfo: purchaseInfo,
+        configuration: config,
+      ),
+    ),
   );
   
-  if (result?.status == UnifiedCheckoutPaymentStatus.pending) {
-    // PDF should be generated
-    // Check if customer downloaded it
+  if (result is CheckoutCompletionStatus && 
+      result.status == UnifiedCheckoutPaymentStatus.pending) {
+    // PDF receipt was generated
+    print('Payment slip downloaded');
+  } else if (result is CheckoutCompletionStatus && 
+             result.status == UnifiedCheckoutPaymentStatus.userCancelledPayment) {
+    // User cancelled without downloading
+    print('Payment cancelled');
   }
 } catch (e) {
   // Handle errors
-  if (e.toString().contains('PDF generation failed')) {
-    showErrorDialog(
-      context: context,
-      message: 'Could not generate payment slip. Please try again.',
-    );
+  showErrorDialog(
+    context: context,
+    message: 'An error occurred. Please try again.',
+  );
   }
 }
 ```

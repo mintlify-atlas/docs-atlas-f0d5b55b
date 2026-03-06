@@ -123,16 +123,21 @@ final config = HubtelCheckoutConfiguration(
   callbackUrl: 'https://your-callback-url.com',
 );
 
-// Launch checkout
-final result = await HubtelCheckout.launch(
-  context: context,
-  purchaseInfo: purchaseInfo,
-  configuration: config,
+// Navigate to checkout screen
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: config,
+    ),
+  ),
 );
 
 // Handle result
-if (result?.status == UnifiedCheckoutPaymentStatus.paid) {
-  print('Payment successful: ${result?.transactionId}');
+if (result is CheckoutCompletionStatus && 
+    result.status == UnifiedCheckoutPaymentStatus.paymentSuccess) {
+  print('Payment successful: ${result.transactionId}');
 }
 ```
 
@@ -228,27 +233,34 @@ class Wallet {
 ### Error Handling
 
 ```dart
-final result = await HubtelCheckout.launch(
-  context: context,
-  purchaseInfo: purchaseInfo,
-  configuration: config,
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: config,
+    ),
+  ),
 );
 
-switch (result?.status) {
-  case UnifiedCheckoutPaymentStatus.paid:
-    // Payment successful
-    break;
-  case UnifiedCheckoutPaymentStatus.pending:
-    // Payment pending authorization
-    break;
-  case UnifiedCheckoutPaymentStatus.failed:
-    // Payment failed
-    break;
-  case UnifiedCheckoutPaymentStatus.expired:
-    // Payment request expired
-    break;
-  default:
-    // Handle other cases
+if (result is CheckoutCompletionStatus) {
+  switch (result.status) {
+    case UnifiedCheckoutPaymentStatus.paymentSuccess:
+      // Payment successful
+      break;
+    case UnifiedCheckoutPaymentStatus.pending:
+      // Payment pending authorization
+      break;
+    case UnifiedCheckoutPaymentStatus.paymentFailed:
+      // Payment failed
+      break;
+    case UnifiedCheckoutPaymentStatus.userCancelledPayment:
+      // User cancelled
+      break;
+    case UnifiedCheckoutPaymentStatus.unknown:
+      // Unknown status
+      break;
+  }
 }
 ```
 
