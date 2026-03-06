@@ -1,0 +1,99 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Hubtel Merchant Checkout SDK",
+  "projectDescription": "A Flutter SDK for integrating Hubtel's mobile money and card payment checkout flow into your application.",
+  "theme": "palm",
+  "primaryColor": "#aaaaa7",
+  "lightColor": "#4e463d",
+  "darkColor": "#1b265f",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core-concepts/configuration",
+              "core-concepts/purchase-info",
+              "core-concepts/payment-status",
+              "core-concepts/theming"
+            ]
+          },
+          {
+            "group": "Payment Methods",
+            "pages": [
+              "payment-methods/mobile-money",
+              "payment-methods/bank-cards",
+              "payment-methods/bank-pay"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/handling-payment-completion",
+              "guides/saved-cards",
+              "guides/customizing-ui",
+              "guides/error-handling"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Classes",
+            "pages": [
+              "api-reference/checkout-screen",
+              "api-reference/hubtel-checkout-configuration",
+              "api-reference/purchase-info",
+              "api-reference/theme-config",
+              "api-reference/checkout-completion-status"
+            ]
+          },
+          {
+            "group": "Enums",
+            "pages": [
+              "api-reference/unified-checkout-payment-status",
+              "api-reference/payment-status"
+            ]
+          },
+          {
+            "group": "Models",
+            "pages": [
+              "api-reference/bank-card-data"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Mobile money payments (MTN, Vodafone, AirtelTigo)",
+    "Bank card payments with 3DS authentication",
+    "Bank pay functionality",
+    "OTP verification for secure transactions",
+    "Saved payment methods support",
+    "Customizable UI theming",
+    "Real-time payment status tracking",
+    "Receipt generation and download"
+  ],
+  "publicApiSurface": [
+    "CheckoutScreen",
+    "HubtelCheckoutConfiguration",
+    "PurchaseInfo",
+    "ThemeConfig",
+    "UnifiedCheckoutPaymentStatus",
+    "CheckoutCompletionStatus",
+    "BankCardData"
+  ]
+}
