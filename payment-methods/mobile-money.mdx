@@ -1,0 +1,275 @@
+---
+title: 'Mobile Money'
+description: 'Accept payments from MTN, Vodafone (Telecel), and AirtelTigo mobile money networks'
+---
+
+## Overview
+
+The Hubtel Merchant Checkout SDK supports mobile money payments from all major mobile network operators in Ghana. Mobile money is one of the most popular payment methods, allowing customers to pay directly from their mobile wallets.
+
+## Supported Providers
+
+The SDK supports the following mobile money providers:
+
+<CardGroup cols={3}>
+  <Card title="MTN Mobile Money" icon="phone">
+    Ghana's largest mobile money network
+  </Card>
+  <Card title="Telecel Cash" icon="phone">
+    Formerly Vodafone Cash
+  </Card>
+  <Card title="AirtelTigo Cash" icon="phone">
+    Combined Airtel and Tigo network
+  </Card>
+</CardGroup>
+
+## Provider Configuration
+
+The SDK automatically handles provider identification and configuration. Each provider is represented by the `MomoProvider` class:
+
+```dart
+class MomoProvider {
+  String? name;
+  String? logoUrl;
+  String? alias;
+  String? receiveMoneyPromptValue;
+  String? directDebitValue;
+  String? preapprovalConfirmValue;
+}
+```
+
+### Provider Aliases
+
+Each provider has a specific alias used for API communication:
+
+| Provider | Alias | Direct Debit Value |
+|----------|-------|--------------------|
+| MTN | `mtn-gh` | `mtn-gh-direct-debit` |
+| Vodafone/Telecel | `vodafone-gh` | `vodafone-gh-direct-debit` |
+| AirtelTigo | `tigo-gh` | `tigo-gh-direct-debit` |
+
+## Payment Flow
+
+<Steps>
+  <Step title="Customer Selects Mobile Money">
+    The customer selects mobile money as their payment method in the checkout interface.
+  </Step>
+  
+  <Step title="Choose Provider">
+    The customer selects their mobile network provider (MTN, Vodafone, or AirtelTigo).
+  </Step>
+  
+  <Step title="Enter Mobile Number">
+    The customer enters their registered mobile money number.
+  </Step>
+  
+  <Step title="Authorization Prompt">
+    The customer receives a USSD prompt on their phone to authorize the payment by entering their mobile money PIN.
+  </Step>
+  
+  <Step title="Payment Confirmation">
+    Once authorized, the payment is processed and the customer receives a confirmation.
+  </Step>
+</Steps>
+
+## Mobile Money Response
+
+When a mobile money payment is initiated, the SDK returns a `MomoResponse` object:
+
+```dart
+class MomoResponse {
+  String? transactionId;
+  double? charges;
+  double? amount;
+  double? amountAfterCharges;
+  double? amountCharged;
+  double? deliveryFee;
+  String? description;
+  String? clientReference;
+  String? hubtelPreapprovalId;
+  String? otpPrefix;
+  String? customerMsisdn;
+  bool? skipOtp;
+  String? verificationType;
+  String? customerName;
+  String? invoiceNumber;
+  String? email;
+}
+```
+
+### Key Response Fields
+
+- **transactionId**: Unique identifier for the transaction
+- **customerMsisdn**: The customer's mobile money number
+- **hubtelPreapprovalId**: ID for pre-approved transactions
+- **skipOtp**: Whether OTP verification can be skipped
+- **verificationType**: The type of verification required
+
+## Usage Example
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+// Configure checkout with purchase info
+final purchaseInfo = PurchaseInfo(
+  customerMsisdn: '0241234567', // Customer's phone number
+  amount: 50.00,
+  description: 'Payment for goods',
+);
+
+final config = HubtelCheckoutConfiguration(
+  merchantApiKey: 'your_api_key',
+  merchantID: 'your_merchant_id',
+  callbackUrl: 'https://your-callback-url.com',
+);
+
+// Launch checkout
+final result = await HubtelCheckout.launch(
+  context: context,
+  purchaseInfo: purchaseInfo,
+  configuration: config,
+);
+
+// Handle result
+if (result?.status == UnifiedCheckoutPaymentStatus.paid) {
+  print('Payment successful: ${result?.transactionId}');
+}
+```
+
+## Authorization Methods
+
+### USSD Prompt
+
+Customers receive an authorization prompt on their phone. If they don't receive it, they can manually check:
+
+<Info>
+  **MTN Customers**: Dial `*170#` → My Account → Approvals
+</Info>
+
+### OTP Verification
+
+Some merchants may require OTP verification for mobile money payments:
+
+```dart
+// Check if OTP is required
+if (channelResponse.requireMobileMoneyOTP == true) {
+  // Customer will need to enter OTP
+  // SDK handles OTP screen automatically
+}
+```
+
+## Pre-Approval (Mandates)
+
+For recurring payments, the SDK supports mobile money pre-approvals:
+
+<Note>
+  Pre-approvals allow customers to authorize recurring payments without entering their PIN each time.
+</Note>
+
+### Creating a Mandate ID
+
+For G-Money (GCB) users:
+
+<Steps>
+  <Step title="Dial USSD Code">
+    Dial `*422#`
+  </Step>
+  <Step title="Select G-Money">
+    Select Option 2 (G-Money)
+  </Step>
+  <Step title="Payment Services">
+    Select Option 5 (Payment Services)
+  </Step>
+  <Step title="Mandate">
+    Select Option 6 (Mandate)
+  </Step>
+  <Step title="Create Mandate">
+    Select Option 1 (Create Mandate)
+  </Step>
+</Steps>
+
+## Wallet Management
+
+For Hubtel internal merchants, customers can save mobile money wallets for faster checkout:
+
+```dart
+class Wallet {
+  final String? accountNo;        // Mobile money number
+  final String? accountName;      // Account holder name
+  final String? provider;         // Provider identifier
+  final String? type;             // Wallet type
+  
+  String get providerName {
+    if (provider?.toLowerCase().contains('mtn') == true) {
+      return 'MTN Mobile Money';
+    }
+    if (provider?.toLowerCase().contains('vodafone') == true) {
+      return 'Telecel Cash';
+    }
+    if (provider?.toLowerCase().contains('tigo') == true || 
+        provider?.toLowerCase().contains('airtel') == true) {
+      return 'AT Money';
+    }
+    return provider ?? '';
+  }
+}
+```
+
+## Best Practices
+
+<Tip>
+  **Testing**: Use test credentials provided by Hubtel for development and staging environments.
+</Tip>
+
+<Warning>
+  **Customer Phone Numbers**: Always validate that the phone number matches the format required by the mobile network operator.
+</Warning>
+
+### Error Handling
+
+```dart
+final result = await HubtelCheckout.launch(
+  context: context,
+  purchaseInfo: purchaseInfo,
+  configuration: config,
+);
+
+switch (result?.status) {
+  case UnifiedCheckoutPaymentStatus.paid:
+    // Payment successful
+    break;
+  case UnifiedCheckoutPaymentStatus.pending:
+    // Payment pending authorization
+    break;
+  case UnifiedCheckoutPaymentStatus.failed:
+    // Payment failed
+    break;
+  case UnifiedCheckoutPaymentStatus.expired:
+    // Payment request expired
+    break;
+  default:
+    // Handle other cases
+}
+```
+
+## Troubleshooting
+
+### Customer Doesn't Receive Prompt
+
+1. Verify the mobile number is correct
+2. Check if the customer's mobile money wallet is active
+3. Ask customer to manually check for pending approvals using their provider's USSD code
+
+### Payment Timeout
+
+Mobile money payments have a timeout period. If the customer doesn't approve in time:
+
+- The payment status will be `expired`
+- Customer can retry the payment
+- Check the transaction status using the transaction ID
+
+## Related Features
+
+- [Payment Status Tracking](/core-concepts/payment-status) - Monitor payment status in real-time
+- [Bank Cards](/payment-methods/bank-cards) - Alternative payment method
+- [Configuration](/core-concepts/configuration) - Configure mobile money settings

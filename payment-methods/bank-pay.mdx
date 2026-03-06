@@ -1,0 +1,450 @@
+---
+title: 'Bank Pay'
+description: 'Generate payment slips for cash and cheque payments at bank branches'
+---
+
+## Overview
+
+Bank Pay allows customers to make payments via cash or cheque at any bank branch using a generated payment slip. This payment method is ideal for customers who prefer in-person banking or don't have access to digital payment methods.
+
+## How Bank Pay Works
+
+<Steps>
+  <Step title="Customer Selects Bank Pay">
+    Customer chooses the Bank Pay option during checkout.
+  </Step>
+  
+  <Step title="Payment Slip Generated">
+    The SDK generates a downloadable PDF payment slip with all transaction details.
+  </Step>
+  
+  <Step title="Customer Visits Bank">
+    Customer takes the payment slip to any supported bank branch.
+  </Step>
+  
+  <Step title="Payment Made">
+    Customer makes payment via cash or cheque at the bank teller.
+  </Step>
+  
+  <Step title="Status Update">
+    Once the bank confirms payment, the transaction status is updated automatically.
+  </Step>
+</Steps>
+
+## Payment Slip
+
+The payment slip contains all necessary information for the bank teller:
+
+- **Business Name** and logo
+- **Customer Name** and contact details
+- **Transaction ID** (unique reference)
+- **Amount to Pay** (including any charges)
+- **Description** of the payment
+- **Invoice Number** (if applicable)
+- **Barcode/QR Code** for quick processing
+
+## Implementation
+
+### Basic Bank Pay Flow
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+// Configure checkout
+final purchaseInfo = PurchaseInfo(
+  amount: 200.00,
+  description: 'Payment for invoice #INV-2024-001',
+  customerMsisdn: '0241234567',
+);
+
+final config = HubtelCheckoutConfiguration(
+  merchantApiKey: 'your_api_key',
+  merchantID: 'your_merchant_id',
+  callbackUrl: 'https://your-callback-url.com',
+);
+
+// Launch checkout
+final result = await HubtelCheckout.launch(
+  context: context,
+  purchaseInfo: purchaseInfo,
+  configuration: config,
+);
+
+// Bank Pay returns pending status
+if (result?.status == UnifiedCheckoutPaymentStatus.pending) {
+  print('Payment slip generated. Transaction ID: ${result?.transactionId}');
+  print('Customer should visit bank with payment slip');
+}
+```
+
+## Generating the PDF Receipt
+
+The SDK includes a receipt screen that allows customers to download the payment slip:
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/src/ux/bank_pay/bank_pay_receipt_screen.dart';
+import 'package:flutter_html_to_pdf/flutter_html_to_pdf.dart';
+import 'package:open_filex/open_filex.dart';
+
+class BankPayReceiptScreen extends StatefulWidget {
+  final MomoResponse mobileMoneyResponse;  // Contains transaction details
+  final HtmlRequirements businessDetails;   // Contains business info
+
+  BankPayReceiptScreen({
+    required this.mobileMoneyResponse,
+    required this.businessDetails,
+  });
+}
+
+// Generate PDF from HTML
+Future<void> generatePdfFromHtml(String htmlContent) async {
+  Directory appDocDir = await getApplicationDocumentsDirectory();
+  final targetPath = appDocDir.path;
+  final targetFileName = "${businessDetails.businessName}_${mobileMoneyResponse.customerName}_${DateTime.now()}";
+
+  final generatedPdfFile = await FlutterHtmlToPdf.convertFromHtmlContent(
+    htmlContent, 
+    targetPath, 
+    targetFileName
+  );
+
+  // Open the generated PDF
+  await OpenFilex.open(generatedPdfFile.path);
+}
+```
+
+## Bank Pay Status Screen
+
+After generating the payment slip, customers see a status screen with instructions:
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/src/ux/bank_pay/bank_pay_status_screen.dart';
+
+class BankPayStatusScreen extends StatelessWidget {
+  const BankPayStatusScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPage(
+      title: 'Confirm Process',
+      body: Center(
+        child: Column(
+          children: [
+            // Success icon
+            SvgPicture.asset(CheckoutDrawables.transactionSuccessful),
+            
+            // Instructions
+            Text('Pay at any bank branch on the Ghana.Gov payment platform'),
+            
+            // Status check info
+            Text(
+              'Once complete you may check the status of this pay-in-slip '
+              'in your payment history or dial *718*108#'
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+## UI Components
+
+The SDK provides a pre-built expansion tile for Bank Pay:
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/src/custom_components/bank_pay_tile.dart';
+
+class BankPayExpansionTile extends StatefulWidget {
+  final ExpansionTileController controller;
+  final void Function(bool)? onExpansionChanged;
+  final bool isSelected;
+
+  BankPayExpansionTile({
+    required this.controller,
+    required this.onExpansionChanged,
+    required this.isSelected,
+  });
+}
+
+// Usage in checkout
+BankPayExpansionTile(
+  controller: bankPayExpansionController,
+  onExpansionChanged: (expanded) {
+    if (expanded) {
+      // Handle Bank Pay selection
+    }
+  },
+  isSelected: selectedPaymentMethod == 'bankpay',
+)
+```
+
+## Payment Status Tracking
+
+Bank Pay payments start with a `pending` status:
+
+<Info>
+  The payment remains pending until the bank confirms receipt of payment. This can take anywhere from a few minutes to a few hours depending on the bank.
+</Info>
+
+### Checking Payment Status
+
+Customers can check their payment status using:
+
+1. **Your Application**: Query the payment status using the transaction ID
+2. **Payment History**: Check within their payment history
+3. **USSD Code**: Dial `*718*108#` for status updates
+
+```dart
+// Check payment status
+final statusResponse = await checkoutViewModel.checkPaymentStatus(
+  transactionId: result.transactionId,
+);
+
+switch (statusResponse.status) {
+  case PaymentStatus.paid:
+    // Bank confirmed payment
+    print('Payment confirmed by bank');
+    break;
+  case PaymentStatus.pending:
+    // Still waiting for bank confirmation
+    print('Waiting for bank confirmation');
+    break;
+  case PaymentStatus.failed:
+    // Payment was not made or rejected
+    print('Payment failed');
+    break;
+  case PaymentStatus.expired:
+    // Payment slip expired
+    print('Payment slip expired');
+    break;
+}
+```
+
+## WebView Display
+
+The payment slip is displayed in a WebView before PDF generation:
+
+```dart
+import 'package:webview_flutter/webview_flutter.dart';
+
+late final WebViewController controller;
+
+@override
+void initState() {
+  super.initState();
+  controller = WebViewController()
+    ..loadHtmlString(
+      HTMLStrings.generateString(businessDetails, mobileMoneyResponse)
+    );
+}
+
+// Display WebView
+WebViewWidget(controller: controller)
+```
+
+## HTML Template Requirements
+
+The `HtmlRequirements` class specifies what business information is needed:
+
+```dart
+class HtmlRequirements {
+  final String businessName;
+  final String businessLogoUrl;
+  final String transactionId;
+  final double amount;
+  final String customerName;
+  final String customerMsisdn;
+  final String description;
+  // Additional fields as needed
+}
+```
+
+## Configuration
+
+### Enable Bank Pay
+
+Bank Pay availability is determined by the channel configuration:
+
+```dart
+// The SDK checks available payment channels
+final channels = await checkoutViewModel.fetchChannels();
+
+// Bank Pay is available if included in channels list
+if (channels.channels?.contains('bankpay') == true) {
+  // Show Bank Pay option
+}
+```
+
+## Best Practices
+
+<Tip>
+  **PDF Download**: Ensure customers download the PDF before leaving the checkout screen. Without it, they cannot make the payment at the bank.
+</Tip>
+
+<Warning>
+  **Expiry Time**: Payment slips may have an expiry period. Communicate this clearly to customers.
+</Warning>
+
+### User Experience Recommendations
+
+1. **Clear Instructions**: Show step-by-step instructions for using the payment slip
+2. **Download Confirmation**: Confirm the PDF was successfully downloaded
+3. **Contact Information**: Provide support contact in case of issues
+4. **Status Notifications**: Send updates when payment is confirmed
+
+### Implementation Tips
+
+```dart
+// 1. Show loading state while generating PDF
+showLoadingDialog(context: context, text: "Downloading");
+
+// 2. Handle PDF generation errors
+try {
+  final pdfFile = await FlutterHtmlToPdf.convertFromHtmlContent(
+    htmlContent, 
+    targetPath, 
+    targetFileName
+  );
+  
+  if (pdfFile.path.isNotEmpty) {
+    // Success - open the file
+    await OpenFilex.open(pdfFile.path);
+  }
+} catch (e) {
+  // Show error dialog
+  showErrorDialog(
+    context: context,
+    message: 'Failed to generate payment slip. Please try again.',
+  );
+}
+
+// 3. Navigate to status screen after successful download
+Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => const BankPayStatusScreen()
+  ),
+);
+```
+
+## Transaction Response
+
+Bank Pay uses the same `MomoResponse` structure as mobile money:
+
+```dart
+class MomoResponse {
+  String? transactionId;      // Unique transaction reference
+  double? amount;             // Payment amount
+  double? charges;            // Any applicable charges
+  String? description;        // Payment description
+  String? customerName;       // Customer's name
+  String? customerMsisdn;     // Customer's phone number
+  String? invoiceNumber;      // Invoice reference
+  String? clientReference;    // Your internal reference
+}
+```
+
+## Dependencies
+
+Bank Pay requires these packages:
+
+```yaml
+dependencies:
+  flutter_html_to_pdf: ^0.7.0  # PDF generation
+  open_filex: ^4.3.2            # Open generated PDF
+  path_provider: ^2.0.0         # File system access
+  webview_flutter: ^4.0.0       # Display payment slip
+```
+
+## Payment Confirmation Flow
+
+<Steps>
+  <Step title="Customer Makes Payment">
+    Customer presents payment slip at bank and makes payment.
+  </Step>
+  
+  <Step title="Bank Processes Payment">
+    Bank teller processes the payment using the reference number.
+  </Step>
+  
+  <Step title="Payment Gateway Notified">
+    Bank notifies Hubtel's payment gateway of the successful payment.
+  </Step>
+  
+  <Step title="Webhook Triggered">
+    Your webhook endpoint receives a payment confirmation notification.
+  </Step>
+  
+  <Step title="Status Updated">
+    Transaction status changes from `pending` to `paid`.
+  </Step>
+</Steps>
+
+## Testing
+
+<Note>
+  In sandbox/test mode, you can simulate bank payment confirmations without actually visiting a bank.
+</Note>
+
+```dart
+// Test mode - simulate bank payment
+final testResult = await checkoutViewModel.simulateBankPayment(
+  transactionId: 'test-transaction-id',
+);
+
+if (testResult.status == PaymentStatus.paid) {
+  print('Test bank payment successful');
+}
+```
+
+## Error Handling
+
+```dart
+// Handle Bank Pay errors
+try {
+  final result = await HubtelCheckout.launch(
+    context: context,
+    purchaseInfo: purchaseInfo,
+    configuration: config,
+  );
+  
+  if (result?.status == UnifiedCheckoutPaymentStatus.pending) {
+    // PDF should be generated
+    // Check if customer downloaded it
+  }
+} catch (e) {
+  // Handle errors
+  if (e.toString().contains('PDF generation failed')) {
+    showErrorDialog(
+      context: context,
+      message: 'Could not generate payment slip. Please try again.',
+    );
+  }
+}
+```
+
+## Cancellation
+
+Customers can cancel Bank Pay at the status screen:
+
+```dart
+// Cancel button on status screen
+TextButton(
+  onPressed: () {
+    Navigator.pop(context);  // Return to checkout
+  },
+  child: Text('Cancel'),
+)
+
+// On cancellation, transaction remains pending
+// Customer can still use the payment slip if already downloaded
+```
+
+## Related Features
+
+- [Mobile Money](/payment-methods/mobile-money) - Digital payment alternative
+- [Bank Cards](/payment-methods/bank-cards) - Card payment alternative
+- [Payment Status](/core-concepts/payment-status) - Track payment status
+- [Configuration](/core-concepts/configuration) - Configure the SDK for your merchant account

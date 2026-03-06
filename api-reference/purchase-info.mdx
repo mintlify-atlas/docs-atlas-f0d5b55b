@@ -1,0 +1,101 @@
+---
+title: "PurchaseInfo"
+description: "Object containing details about the purchase transaction"
+---
+
+## Overview
+
+`PurchaseInfo` encapsulates all the necessary information about a purchase transaction, including the amount, customer details, and transaction references.
+
+## Constructor
+
+```dart
+PurchaseInfo({
+  required double amount,
+  required String customerPhoneNumber,
+  required String purchaseDescription,
+  required String clientReference,
+})
+```
+
+### Parameters
+
+<ParamField path="amount" type="double" required>
+  The total amount to be charged for this purchase. Should be a positive number.
+</ParamField>
+
+<ParamField path="customerPhoneNumber" type="String" required>
+  The customer's phone number in Ghanaian format (e.g., '0241234567' or '233241234567'). This is used for mobile money payments and customer identification.
+</ParamField>
+
+<ParamField path="purchaseDescription" type="String" required>
+  A description of what the customer is purchasing. This appears in transaction records and receipts.
+</ParamField>
+
+<ParamField path="clientReference" type="String" required>
+  Your unique reference ID for this transaction. Use this to track and reconcile payments in your system.
+</ParamField>
+
+## Properties
+
+<ResponseField name="amount" type="double">
+  The purchase amount to be charged.
+</ResponseField>
+
+<ResponseField name="customerPhoneNumber" type="String">
+  The customer's phone number as provided.
+</ResponseField>
+
+<ResponseField name="purchaseDescription" type="String">
+  Description of the purchase.
+</ResponseField>
+
+<ResponseField name="clientReference" type="String">
+  Your unique transaction reference ID.
+</ResponseField>
+
+<ResponseField name="customerMsisdn" type="String" getter>
+  A getter that returns the formatted customer phone number in MSISDN format. This is automatically generated from `customerPhoneNumber`.
+</ResponseField>
+
+## Usage Example
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+// Create purchase information
+final purchaseInfo = PurchaseInfo(
+  amount: 250.00,
+  customerPhoneNumber: '0241234567',
+  purchaseDescription: 'Premium subscription - Monthly',
+  clientReference: 'ORDER-2024-001',
+);
+
+// Use in checkout
+CheckoutScreen(
+  purchaseInfo: purchaseInfo,
+  configuration: configuration,
+);
+```
+
+## Phone Number Format
+
+The `customerPhoneNumber` accepts various Ghanaian phone number formats:
+
+- `0241234567` - Local format
+- `233241234567` - International format without plus
+- `+233241234567` - International format with plus
+
+The SDK automatically formats these into the correct MSISDN format via the `customerMsisdn` getter.
+
+## Client Reference Best Practices
+
+<Tip>
+  Use a unique, traceable reference for each transaction to simplify reconciliation and customer support.
+</Tip>
+
+- Make references unique across all transactions
+- Include identifiable information (order ID, customer ID, timestamp)
+- Keep references alphanumeric for compatibility
+- Store the reference in your database for transaction tracking
+- Examples: `ORDER-123456`, `INV-2024-001`, `SUB-USER-789-20240315`

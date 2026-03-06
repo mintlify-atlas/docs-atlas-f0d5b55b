@@ -1,0 +1,410 @@
+---
+title: 'Customizing the UI'
+description: 'Customize the checkout interface to match your brand with theme configuration'
+icon: 'palette'
+---
+
+## Overview
+
+The Hubtel Merchant Checkout SDK provides theme customization through the `ThemeConfig` class, allowing you to adjust the primary color used throughout the checkout interface to match your brand identity.
+
+## ThemeConfig Class
+
+The `ThemeConfig` class is a simple configuration object that accepts a primary color:
+
+```dart
+class ThemeConfig {
+  late final Color _primaryColor;
+
+  ThemeConfig({required primaryColor}) {
+    _primaryColor = primaryColor;
+  }
+
+  Color get primaryColor => _primaryColor;
+}
+```
+
+### Creating a Theme Configuration
+
+Create a `ThemeConfig` object by providing your desired primary color:
+
+```dart
+final themeConfig = ThemeConfig(primaryColor: Colors.blue);
+```
+
+## Applying Theme to CheckoutScreen
+
+Pass your theme configuration to the `CheckoutScreen` using the `themeConfig` parameter:
+
+```dart
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: hubtelConfig,
+      themeConfig: ThemeConfig(primaryColor: Colors.blue),
+    ),
+  ),
+);
+```
+
+## How the Theme is Applied
+
+The SDK applies your primary color to various UI elements throughout the checkout flow:
+
+<CardGroup cols={2}>
+  <Card title="Buttons" icon="square">
+    Primary action buttons use your theme color
+  </Card>
+  <Card title="Progress Indicators" icon="spinner">
+    Loading spinners and progress bars
+  </Card>
+  <Card title="Selection States" icon="circle-check">
+    Selected payment methods and options
+  </Card>
+  <Card title="Interactive Elements" icon="hand-pointer">
+    Tabs, toggles, and other interactive components
+  </Card>
+</CardGroup>
+
+### Where the Theme Color is Used
+
+Here are specific UI elements that adopt your theme color:
+
+1. **Pay Button** - The main payment button at the bottom of the screen
+2. **Loading Indicators** - Circular progress indicators during API calls
+3. **Selected Payment Options** - Highlighted borders for selected payment methods
+4. **Input Focus States** - Input field borders when focused
+5. **Expansion Tile Indicators** - Active payment method indicators
+
+## Theme Configuration Examples
+
+### Example 1: Teal Theme (Default)
+
+```dart
+final themeConfig = ThemeConfig(
+  primaryColor: const Color(0xFF01C7B1), // Teal
+);
+```
+
+### Example 2: Custom Brand Color
+
+```dart
+final themeConfig = ThemeConfig(
+  primaryColor: const Color(0xFF6A4C93), // Purple
+);
+```
+
+### Example 3: Material Colors
+
+```dart
+import 'package:flutter/material.dart';
+
+// Using Material Design colors
+final themeConfig = ThemeConfig(
+  primaryColor: Colors.deepOrange,
+);
+```
+
+### Example 4: Dark Theme
+
+```dart
+final themeConfig = ThemeConfig(
+  primaryColor: const Color(0xFF1E1E1E), // Dark gray
+);
+```
+
+## Complete Implementation Example
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+import 'package:uuid/uuid.dart';
+
+class CustomThemedCheckout extends StatelessWidget {
+  const CustomThemedCheckout({Key? key}) : super(key: key);
+
+  // Define your brand color
+  static const Color brandColor = Color(0xFF0066CC);
+
+  Future<void> startCheckout(BuildContext context) async {
+    final hubtelConfig = HubtelCheckoutConfiguration(
+      merchantApiKey: "YOUR_BASE64_ENCODED_API_KEY",
+      merchantID: "YOUR_MERCHANT_ID",
+      callbackUrl: "https://your-callback-url.com",
+    );
+
+    final purchaseInfo = PurchaseInfo(
+      amount: 75.0,
+      customerPhoneNumber: '0541234567',
+      clientReference: const Uuid().v4(),
+      purchaseDescription: 'Premium Subscription',
+    );
+
+    // Apply custom theme
+    final themeConfig = ThemeConfig(primaryColor: brandColor);
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutScreen(
+          purchaseInfo: purchaseInfo,
+          configuration: hubtelConfig,
+          themeConfig: themeConfig,
+        ),
+      ),
+    );
+
+    if (result is CheckoutCompletionStatus) {
+      handlePaymentResult(context, result);
+    }
+  }
+
+  void handlePaymentResult(
+    BuildContext context,
+    CheckoutCompletionStatus status,
+  ) {
+    if (status.status == UnifiedCheckoutPaymentStatus.paymentSuccess) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Payment Successful'),
+          content: Text('Transaction ID: ${status.transactionId}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Custom Themed Checkout'),
+        backgroundColor: brandColor,
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () => startCheckout(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: brandColor,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 32,
+              vertical: 16,
+            ),
+          ),
+          child: const Text(
+            'Proceed to Payment',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+## Default Theme
+
+If you don't provide a `ThemeConfig`, the SDK uses its default teal color:
+
+```dart
+// Default theme color used by the SDK
+static Color themeColor = HubtelColors.teal; // Color(0xFF01C7B1)
+```
+
+## Advanced Customization
+
+### Dynamic Theme Based on User Preferences
+
+You can dynamically change the theme based on user settings:
+
+```dart
+class DynamicThemedCheckout extends StatefulWidget {
+  const DynamicThemedCheckout({Key? key}) : super(key: key);
+
+  @override
+  State<DynamicThemedCheckout> createState() => _DynamicThemedCheckoutState();
+}
+
+class _DynamicThemedCheckoutState extends State<DynamicThemedCheckout> {
+  Color selectedColor = Colors.teal;
+
+  final List<Color> availableColors = [
+    Colors.teal,
+    Colors.blue,
+    Colors.purple,
+    Colors.orange,
+    Colors.red,
+  ];
+
+  Future<void> startCheckout() async {
+    final hubtelConfig = HubtelCheckoutConfiguration(
+      merchantApiKey: "YOUR_BASE64_ENCODED_API_KEY",
+      merchantID: "YOUR_MERCHANT_ID",
+      callbackUrl: "https://your-callback-url.com",
+    );
+
+    final purchaseInfo = PurchaseInfo(
+      amount: 50.0,
+      customerPhoneNumber: '0541234567',
+      clientReference: const Uuid().v4(),
+      purchaseDescription: 'Purchase',
+    );
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutScreen(
+          purchaseInfo: purchaseInfo,
+          configuration: hubtelConfig,
+          themeConfig: ThemeConfig(primaryColor: selectedColor),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Choose Theme Color')),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Select Checkout Theme Color:'),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 10,
+            children: availableColors.map((color) {
+              final isSelected = color == selectedColor;
+              return GestureDetector(
+                onTap: () => setState(() => selectedColor = color),
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: isSelected
+                        ? Border.all(color: Colors.black, width: 3)
+                        : null,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 40),
+          ElevatedButton(
+            onPressed: startCheckout,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: selectedColor,
+            ),
+            child: const Text('Start Checkout'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+### Matching Your App's Theme
+
+Extract the primary color from your app's theme:
+
+```dart
+Future<void> startCheckout(BuildContext context) async {
+  // Get primary color from app theme
+  final primaryColor = Theme.of(context).primaryColor;
+
+  final hubtelConfig = HubtelCheckoutConfiguration(
+    merchantApiKey: "YOUR_BASE64_ENCODED_API_KEY",
+    merchantID: "YOUR_MERCHANT_ID",
+    callbackUrl: "https://your-callback-url.com",
+  );
+
+  final purchaseInfo = PurchaseInfo(
+    amount: 100.0,
+    customerPhoneNumber: '0541234567',
+    clientReference: const Uuid().v4(),
+    purchaseDescription: 'Order Payment',
+  );
+
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => CheckoutScreen(
+        purchaseInfo: purchaseInfo,
+        configuration: hubtelConfig,
+        themeConfig: ThemeConfig(primaryColor: primaryColor),
+      ),
+    ),
+  );
+}
+```
+
+## UI Components Using Theme Color
+
+The SDK applies your theme color to these components internally:
+
+```dart
+// Pay Button (from checkout_home_screen.dart:250)
+CustomButton(
+  title: 'PAY ${totalAmountPayable.formatMoney()}'.toUpperCase(),
+  isEnabledBgColor: ThemeConfig.themeColor,
+  // ...
+)
+
+// Loading Indicators (from checkout_screen.dart:88)
+CircularProgressIndicator(
+  color: ThemeConfig.themeColor,
+)
+
+// Selected Payment Options (custom_indicator.dart:19)
+Container(
+  decoration: BoxDecoration(
+    border: Border.all(
+      color: ThemeConfig.themeColor,
+      width: isSelected ? 6 : 2,
+    ),
+    color: isSelected ? ThemeConfig.themeColor : HubtelColors.neutral,
+  ),
+)
+```
+
+## Best Practices
+
+<Tip>
+  Choose a color that provides good contrast with white or light backgrounds to ensure text and icons remain readable.
+</Tip>
+
+<Note>
+  The SDK handles text color automatically to ensure readability on your chosen primary color.
+</Note>
+
+<Warning>
+  Avoid using very light colors (e.g., light yellow, light gray) as they may reduce visibility of buttons and indicators.
+</Warning>
+
+## Accessibility Considerations
+
+<CardGroup cols={2}>
+  <Card title="Contrast Ratio" icon="circle-half-stroke">
+    Ensure your color has sufficient contrast (minimum 4.5:1) with white text
+  </Card>
+  <Card title="Color Blindness" icon="eye">
+    Test your theme with color blindness simulators to ensure usability
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+- Learn about [handling payment completion](/guides/handling-payment-completion)
+- Explore [saved cards](/guides/saved-cards) functionality
+- Understand [error handling](/guides/error-handling) patterns

@@ -1,0 +1,85 @@
+---
+title: "HubtelCheckoutConfiguration"
+description: "Configuration object containing merchant credentials and settings"
+---
+
+## Overview
+
+`HubtelCheckoutConfiguration` holds the merchant-specific configuration required to initialize and authenticate the checkout process with Hubtel's payment gateway.
+
+## Constructor
+
+```dart
+HubtelCheckoutConfiguration({
+  required String merchantID,
+  required String callbackUrl,
+  required String merchantApiKey,
+})
+```
+
+### Parameters
+
+<ParamField path="merchantID" type="String" required>
+  Your unique merchant identifier provided by Hubtel. This identifies your business in the Hubtel system.
+</ParamField>
+
+<ParamField path="callbackUrl" type="String" required>
+  The URL where Hubtel will send payment status notifications. This should be a publicly accessible endpoint on your server.
+</ParamField>
+
+<ParamField path="merchantApiKey" type="String" required>
+  Your merchant API key for authenticating requests to Hubtel's payment gateway. Keep this secure and never expose it in client-side code.
+</ParamField>
+
+## Properties
+
+<ResponseField name="merchantID" type="String">
+  The merchant's unique identifier in the Hubtel system.
+</ResponseField>
+
+<ResponseField name="callbackUrl" type="String">
+  The callback URL for payment status notifications.
+</ResponseField>
+
+<ResponseField name="merchantApiKey" type="String">
+  The API key for authenticating merchant requests.
+</ResponseField>
+
+## Usage Example
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+// Create configuration with your merchant credentials
+final configuration = HubtelCheckoutConfiguration(
+  merchantID: 'HM12345',
+  merchantApiKey: 'sk_live_abc123xyz789',
+  callbackUrl: 'https://myapp.com/payment-callback',
+);
+
+// Use the configuration in CheckoutScreen
+CheckoutScreen(
+  purchaseInfo: purchaseInfo,
+  configuration: configuration,
+);
+```
+
+## Security Notes
+
+<Warning>
+  Never hardcode your `merchantApiKey` in your application code. Store it securely using environment variables or secure storage mechanisms.
+</Warning>
+
+- Store API keys in secure environment variables or secrets management systems
+- Never commit API keys to version control
+- Use different API keys for development and production environments
+- Rotate API keys periodically for enhanced security
+
+## Obtaining Credentials
+
+To get your merchant credentials:
+
+1. Log in to your [Hubtel Merchant Dashboard](https://dashboard.hubtel.com)
+2. Navigate to **Settings** > **API Keys**
+3. Copy your `merchantID` and `merchantApiKey`
+4. Configure your `callbackUrl` in the webhook settings

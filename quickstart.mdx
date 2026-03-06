@@ -1,80 +1,322 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Get started with the Hubtel Merchant Checkout SDK in minutes
 ---
 
-## Get started in three steps
+## Overview
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through implementing a complete payment flow using the Hubtel Merchant Checkout SDK. By the end, you'll have a working checkout integration in your Flutter app.
 
-### Step 1: Set up your local environment
+## Implementation Steps
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Import the SDK">
+    First, import the package in your Dart file:
 
-### Step 2: Deploy your changes
+    ```dart
+    import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+    ```
+  </Step>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+  <Step title="Create a HubtelCheckoutConfiguration object">
+    Configure the SDK with your merchant credentials:
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    ```dart
+    final hubtelConfig = HubtelCheckoutConfiguration(
+      merchantApiKey: "QTN1akQ1SzpiM2IxMjA1NTEwZmI0NjYzYTdiY2ZmZmUyNmQ1YmIzZA==",
+      merchantID: "1122334",
+      callbackUrl: "https://your-domain.com/payment-callback",
+    );
+    ```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    <Note>
+      **Important**: The `merchantApiKey` must be a Base64-encoded string of your Hubtel merchant credentials. Keep this secure and never commit it to version control. Consider using environment variables or secure storage.
+    </Note>
 
-### Step 3: Go live
+    ### Configuration Parameters
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `merchantApiKey` | String | Yes | Base64 encoded merchant credentials |
+    | `merchantID` | String | Yes | Your Hubtel merchant ID |
+    | `callbackUrl` | String | Yes | URL to receive payment notifications |
+  </Step>
 
-## Next steps
+  <Step title="Create a PurchaseInfo object">
+    Define the purchase details:
 
-Now that you have your docs running, explore these key features:
+    ```dart
+    import 'package:uuid/uuid.dart';
+
+    final purchaseInfo = PurchaseInfo(
+      amount: 50.00,
+      customerPhoneNumber: '0541234567',
+      clientReference: const Uuid().v4(),
+      purchaseDescription: 'Premium Subscription',
+    );
+    ```
+
+    <Info>
+      The `clientReference` should be a unique identifier for each transaction. We're using the `uuid` package here, but you can use any method to generate unique IDs.
+    </Info>
+
+    ### PurchaseInfo Parameters
+
+    | Parameter | Type | Required | Description |
+    |-----------|------|----------|-------------|
+    | `amount` | double | Yes | Transaction amount in GHS |
+    | `customerPhoneNumber` | String | Yes | Customer's mobile number |
+    | `clientReference` | String | Yes | Unique transaction reference |
+    | `purchaseDescription` | String | Yes | Description of the purchase |
+
+    <Tip>
+      Add the `uuid` package to your `pubspec.yaml` for generating unique client references:
+      
+      ```yaml
+      dependencies:
+        uuid: ^4.0.0
+      ```
+    </Tip>
+  </Step>
+
+  <Step title="(Optional) Customize the theme">
+    Optionally, create a `ThemeConfig` object to match your brand:
+
+    ```dart
+    import 'package:flutter/material.dart';
+
+    final themeConfig = ThemeConfig(primaryColor: Colors.blue);
+    ```
+
+    This will apply your brand color throughout the checkout experience.
+  </Step>
+
+  <Step title="Navigate to the CheckoutScreen">
+    When the user initiates payment (e.g., taps a "Pay Now" button), navigate to the checkout screen:
+
+    ```dart
+    void initiateCheckout(BuildContext context) async {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) {
+            return CheckoutScreen(
+              purchaseInfo: purchaseInfo,
+              configuration: hubtelConfig,
+              themeConfig: themeConfig, // Optional
+            );
+          },
+        ),
+      );
+
+      // Handle the checkout result
+      if (result is CheckoutCompletionStatus) {
+        handleCheckoutCompletion(result);
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Handle the payment result">
+    Process the checkout completion status:
+
+    ```dart
+    void handleCheckoutCompletion(CheckoutCompletionStatus status) {
+      switch (status.status) {
+        case UnifiedCheckoutPaymentStatus.paymentSuccess:
+          // Payment was successful
+          print('Payment successful!');
+          print('Transaction ID: ${status.transactionId}');
+          print('Payment Type: ${status.paymentType}');
+          print('Payment Channel: ${status.paymentChannel}');
+          
+          // Update your UI, save the transaction, etc.
+          showSuccessDialog();
+          break;
+
+        case UnifiedCheckoutPaymentStatus.paymentFailed:
+          // Payment failed
+          print('Payment failed');
+          showErrorDialog('Payment failed. Please try again.');
+          break;
+
+        case UnifiedCheckoutPaymentStatus.pending:
+          // Payment is pending (e.g., bank transfer)
+          print('Payment pending');
+          showPendingDialog('Your payment is being processed.');
+          break;
+
+        case UnifiedCheckoutPaymentStatus.userCancelledPayment:
+          // User cancelled the payment
+          print('User cancelled payment');
+          break;
+
+        case UnifiedCheckoutPaymentStatus.unknown:
+          // Status unknown
+          print('Payment status unknown');
+          showErrorDialog('Unable to determine payment status.');
+          break;
+      }
+    }
+    ```
+
+    <Note>
+      The `CheckoutCompletionStatus` object contains:
+      - `status` - The payment status enum
+      - `transactionId` - Unique transaction identifier
+      - `paymentType` - Type of payment used (optional)
+      - `paymentChannel` - Channel used for payment (optional)
+    </Note>
+  </Step>
+</Steps>
+
+## Complete Example
+
+Here's a complete working example:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+import 'package:uuid/uuid.dart';
+
+class PaymentScreen extends StatelessWidget {
+  const PaymentScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Checkout'),
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () => initiateCheckout(context),
+          child: const Text('Pay Now'),
+        ),
+      ),
+    );
+  }
+
+  void initiateCheckout(BuildContext context) async {
+    // Configure the SDK
+    final hubtelConfig = HubtelCheckoutConfiguration(
+      merchantApiKey: "QTN1akQ1SzpiM2IxMjA1NTEwZmI0NjYzYTdiY2ZmZmUyNmQ1YmIzZA==",
+      merchantID: "1122334",
+      callbackUrl: "https://your-domain.com/payment-callback",
+    );
+
+    // Create purchase info
+    final purchaseInfo = PurchaseInfo(
+      amount: 50.00,
+      customerPhoneNumber: '0541234567',
+      clientReference: const Uuid().v4(),
+      purchaseDescription: 'Premium Subscription',
+    );
+
+    // Optional: Customize theme
+    final themeConfig = ThemeConfig(primaryColor: Colors.blue);
+
+    // Navigate to checkout
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return CheckoutScreen(
+            purchaseInfo: purchaseInfo,
+            configuration: hubtelConfig,
+            themeConfig: themeConfig,
+          );
+        },
+      ),
+    );
+
+    // Handle result
+    if (result is CheckoutCompletionStatus) {
+      handleCheckoutCompletion(context, result);
+    }
+  }
+
+  void handleCheckoutCompletion(
+    BuildContext context,
+    CheckoutCompletionStatus status,
+  ) {
+    switch (status.status) {
+      case UnifiedCheckoutPaymentStatus.paymentSuccess:
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment successful! ID: ${status.transactionId}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        break;
+
+      case UnifiedCheckoutPaymentStatus.paymentFailed:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        break;
+
+      case UnifiedCheckoutPaymentStatus.pending:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment is being processed.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        break;
+
+      case UnifiedCheckoutPaymentStatus.userCancelledPayment:
+        // User cancelled - no action needed
+        break;
+
+      case UnifiedCheckoutPaymentStatus.unknown:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to determine payment status.'),
+            backgroundColor: Colors.grey,
+          ),
+        );
+        break;
+    }
+  }
+}
+```
+
+## Payment Status Reference
+
+The `UnifiedCheckoutPaymentStatus` enum has the following values:
+
+| Status | Description |
+|--------|-------------|
+| `paymentSuccess` | Payment was completed successfully |
+| `paymentFailed` | Payment attempt failed |
+| `pending` | Payment is being processed (common with bank transfers) |
+| `userCancelledPayment` | User closed checkout without completing payment |
+| `unknown` | Payment status could not be determined |
+
+<Warning>
+  Always verify payment status on your backend using the callback URL. The client-side status should not be the sole source of truth for critical business logic.
+</Warning>
+
+## Testing
+
+For testing purposes, you can use Hubtel's sandbox credentials. Contact Hubtel support to obtain test merchant credentials.
+
+<Tip>
+  During development, use small amounts (e.g., 0.1 GHS) for testing to avoid unnecessary charges.
+</Tip>
+
+## Next Steps
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Configuration" icon="gear" href="/core-concepts/configuration">
+    Learn about advanced configuration options
+  </Card>
+  
+  <Card title="Payment Methods" icon="wallet" href="/payment-methods/mobile-money">
+    Explore supported payment methods and channels
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

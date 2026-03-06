@@ -1,0 +1,71 @@
+---
+title: 'Configuration'
+description: 'Configure the Hubtel Checkout SDK with your merchant credentials'
+icon: 'gear'
+---
+
+The `HubtelCheckoutConfiguration` class is used to configure the checkout SDK with your merchant credentials and settings. This object is required to initialize the checkout flow and enables secure payment processing.
+
+## Overview
+
+The configuration object contains your merchant identification details, API authentication key, and callback URL for payment notifications.
+
+## Properties
+
+<ParamField path="merchantID" type="String" required>
+  Your unique merchant identifier provided by Hubtel. This ID is used to identify your business in the payment system.
+</ParamField>
+
+<ParamField path="merchantApiKey" type="String" required>
+  Base64 encoded string of your merchant credentials (merchant ID and password). This key is used to authenticate API requests securely.
+  
+  <Note>
+    Keep your API key secure and never expose it in client-side code or version control systems.
+  </Note>
+</ParamField>
+
+<ParamField path="callbackUrl" type="String" required>
+  A URL provided by you to receive payment status notifications from the Hubtel payment API. This endpoint will be called when payment status changes occur.
+  
+  <Info>
+    Your callback URL should be able to handle POST requests from Hubtel's servers to receive real-time payment updates.
+  </Info>
+</ParamField>
+
+## Usage Example
+
+Here's how to create a configuration object for the checkout SDK:
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+final hubtelConfig = HubtelCheckoutConfiguration(
+  merchantApiKey: "QTN1akQ1SzpiM2IxMjA1NTEwZmI0NjYzYTdiY2ZmZmUyNmQ1YmIzZA==",
+  merchantID: "1122334",
+  callbackUrl: "https://your-domain.com/payment/callback",
+);
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Secure Storage" icon="lock">
+    Store your merchant API key securely using environment variables or secure storage solutions, not hardcoded in your application.
+  </Card>
+  
+  <Card title="Callback Endpoint" icon="webhook">
+    Ensure your callback URL is accessible from the internet and can handle webhook requests from Hubtel's servers.
+  </Card>
+  
+  <Card title="HTTPS Required" icon="shield-check">
+    Use HTTPS for your callback URL to ensure secure transmission of payment status data.
+  </Card>
+  
+  <Card title="Validation" icon="circle-check">
+    Validate webhook signatures and verify payment status through Hubtel's API before fulfilling orders.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+After configuring the SDK, you'll need to create a [PurchaseInfo](/core-concepts/purchase-info) object with transaction details before launching the checkout flow.

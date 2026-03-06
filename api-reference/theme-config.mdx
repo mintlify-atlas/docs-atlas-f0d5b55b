@@ -1,0 +1,131 @@
+---
+title: "ThemeConfig"
+description: "Configuration object for customizing the checkout UI appearance"
+---
+
+## Overview
+
+`ThemeConfig` allows you to customize the visual appearance of the checkout interface by configuring colors and accessing predefined text styles that match Flutter's Material Design text theme.
+
+## Constructor
+
+```dart
+ThemeConfig({
+  required Color primaryColor,
+})
+```
+
+### Parameters
+
+<ParamField path="primaryColor" type="Color" required>
+  The primary color used throughout the checkout UI. This color is applied to buttons, progress indicators, and accent elements.
+</ParamField>
+
+## Properties
+
+<ResponseField name="primaryColor" type="Color" getter>
+  Returns the primary color configured for the checkout theme. This is a read-only getter that accesses the internal `_primaryColor` field.
+</ResponseField>
+
+<ResponseField name="textTheme" type="TextTheme" static>
+  A static `TextTheme` containing predefined text styles for the checkout interface. Maps to Flutter's Material Design text theme with the following styles:
+  
+  - `displayLarge` - Headline 1 (largest)
+  - `displayMedium` - Headline 2
+  - `displaySmall` - Headline 3
+  - `headlineMedium` - Headline 4
+  - `headlineSmall` - Headline 5
+  - `titleLarge` - Headline 6
+  - `bodyLarge` - Body 1
+  - `bodySmall` - Body 2 / Caption
+  - `labelLarge` - Button text
+  
+  All text styles use the NunitoSans font family.
+</ResponseField>
+
+<ResponseField name="themeColor" type="Color" static>
+  A static property that holds the current theme color used across the checkout UI. Defaults to `HubtelColors.teal` if not configured.
+</ResponseField>
+
+## Usage Example
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+// Create custom theme with your brand color
+final customTheme = ThemeConfig(
+  primaryColor: Color(0xFF1E88E5), // Custom blue
+);
+
+// Use in checkout
+CheckoutScreen(
+  purchaseInfo: purchaseInfo,
+  configuration: configuration,
+  themeConfig: customTheme,
+);
+```
+
+## Using with Brand Colors
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+// Use Material Design colors
+final theme1 = ThemeConfig(
+  primaryColor: Colors.purple,
+);
+
+// Use custom brand color
+final theme2 = ThemeConfig(
+  primaryColor: Color(0xFFFF6B35), // Brand orange
+);
+
+// Use color from hex
+final theme3 = ThemeConfig(
+  primaryColor: Color(0xFF00A86B), // Jade green
+);
+```
+
+## Accessing Text Styles
+
+You can access the predefined text styles through the static `textTheme` property:
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+// Access text styles
+final headlineStyle = ThemeConfig.textTheme.displayLarge;
+final bodyStyle = ThemeConfig.textTheme.bodyLarge;
+final buttonStyle = ThemeConfig.textTheme.labelLarge;
+
+// Use in your custom widgets
+Text(
+  'Custom Text',
+  style: ThemeConfig.textTheme.headlineMedium,
+);
+```
+
+## Default Theme
+
+If no `ThemeConfig` is provided to `CheckoutScreen`, the SDK uses the default Hubtel teal color:
+
+```dart
+// Default theme color
+ThemeConfig.themeColor // Returns HubtelColors.teal
+```
+
+## Color Application
+
+The `primaryColor` is applied to:
+
+- Action buttons (pay, confirm, etc.)
+- Loading indicators and progress bars
+- Selected states and active elements
+- Links and interactive elements
+- Focus indicators
+
+<Tip>
+  Choose a primary color that has good contrast with white text for optimal readability on buttons and interactive elements.
+</Tip>

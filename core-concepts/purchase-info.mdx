@@ -1,0 +1,131 @@
+---
+title: 'Purchase Info'
+description: 'Define transaction details for checkout processing'
+icon: 'shopping-cart'
+---
+
+The `PurchaseInfo` class contains all the necessary information about a transaction that needs to be processed through the Hubtel Checkout SDK.
+
+## Overview
+
+This object encapsulates the purchase details including the amount to charge, customer information, and transaction references.
+
+## Properties
+
+<ParamField path="amount" type="double" required>
+  The price of the item or service the customer is purchasing. This should be a positive decimal value representing the amount in the currency configured for your merchant account.
+  
+  <Info>
+    The amount should include any applicable taxes or fees you want to charge the customer.
+  </Info>
+</ParamField>
+
+<ParamField path="customerPhoneNumber" type="String" required>
+  The mobile number of the customer making the purchase. This number is used for mobile money payments and transaction notifications.
+  
+  <Note>
+    The phone number should be in a valid Ghanaian mobile number format (e.g., "0541234567").
+  </Note>
+</ParamField>
+
+<ParamField path="purchaseDescription" type="String" required>
+  A description of what the customer is purchasing. This appears in the checkout interface and helps customers identify the transaction.
+  
+  <Tip>
+    Use clear, descriptive text like "Premium Subscription" or "Camera Equipment" to help customers recognize the purchase.
+  </Tip>
+</ParamField>
+
+<ParamField path="clientReference" type="String" required>
+  A unique reference identifier for this transaction from your system. This helps you track and reconcile payments with your internal records.
+  
+  <Warning>
+    Ensure each transaction has a unique client reference to avoid duplicate payment processing.
+  </Warning>
+</ParamField>
+
+## Getters
+
+<ParamField path="customerMsisdn" type="String" getter>
+  A computed property that returns the formatted version of the `customerPhoneNumber`. This is used internally by the SDK for payment processing.
+</ParamField>
+
+## Usage Example
+
+Here's how to create a purchase info object:
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+import 'package:uuid/uuid.dart';
+
+final purchaseInfo = PurchaseInfo(
+  amount: 0.1,
+  customerPhoneNumber: '0541234567',
+  clientReference: const Uuid().v4(),
+  purchaseDescription: 'Camera',
+);
+```
+
+<Note>
+  The example uses the `uuid` package to generate a unique client reference. You can install it from [pub.dev](https://pub.dev/packages/uuid) or use your own unique identifier generation method.
+</Note>
+
+## Complete Checkout Example
+
+Combining `PurchaseInfo` with configuration to launch checkout:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+import 'package:uuid/uuid.dart';
+
+// Create configuration
+final hubtelConfig = HubtelCheckoutConfiguration(
+  merchantApiKey: "QTN1akQ1SzpiM2IxMjA1NTEwZmI0NjYzYTdiY2ZmZmUyNmQ1YmIzZA==",
+  merchantID: "1122334",
+  callbackUrl: "https://your-domain.com/payment/callback",
+);
+
+// Create purchase info
+final purchaseInfo = PurchaseInfo(
+  amount: 25.50,
+  customerPhoneNumber: '0541234567',
+  clientReference: const Uuid().v4(),
+  purchaseDescription: 'Monthly Subscription',
+);
+
+// Launch checkout
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: hubtelConfig,
+    ),
+  ),
+);
+```
+
+## Validation Tips
+
+<CardGroup cols={2}>
+  <Card title="Amount Validation" icon="dollar-sign">
+    Always validate that the amount is greater than zero before creating the purchase info.
+  </Card>
+  
+  <Card title="Phone Number Format" icon="phone">
+    Ensure the customer phone number is in the correct format and belongs to a supported network.
+  </Card>
+  
+  <Card title="Unique References" icon="fingerprint">
+    Use UUID v4 or timestamp-based IDs to ensure each transaction has a unique client reference.
+  </Card>
+  
+  <Card title="Description Length" icon="text">
+    Keep purchase descriptions concise but descriptive enough for customers to recognize the transaction.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+After the checkout is complete, you'll receive a [Payment Status](/core-concepts/payment-status) result that indicates whether the transaction was successful.

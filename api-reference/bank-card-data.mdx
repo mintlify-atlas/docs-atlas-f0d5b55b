@@ -1,0 +1,143 @@
+---
+title: "BankCardData"
+description: "Model representing bank card information for payment processing"
+---
+
+## Overview
+
+The `BankCardData` class encapsulates bank card information required for processing card payments. It implements the `Serializable` interface for easy conversion to and from JSON.
+
+## Definition
+
+```dart
+class BankCardData implements Serializable {
+  String? cardNumber;
+  String? cardExpiryDate;
+  String? cvv;
+
+  BankCardData({this.cardNumber, this.cardExpiryDate, this.cvv});
+}
+```
+
+## Constructor
+
+### BankCardData()
+
+Creates a new instance of `BankCardData` with optional card information.
+
+```dart
+BankCardData({
+  String? cardNumber,
+  String? cardExpiryDate,
+  String? cvv,
+})
+```
+
+**Parameters:**
+- `cardNumber` (optional) - The bank card number
+- `cardExpiryDate` (optional) - The expiry date of the card
+- `cvv` (optional) - The card verification value
+
+### BankCardData.fromJson()
+
+Creates a `BankCardData` instance from a JSON map.
+
+```dart
+factory BankCardData.fromJson(Map<String, dynamic>? json)
+```
+
+**Parameters:**
+- `json` - A map containing the card data
+
+**Returns:** A new `BankCardData` instance
+
+### BankCardData.fromString()
+
+Creates a `BankCardData` instance from a JSON string.
+
+```dart
+static BankCardData fromString(String? string)
+```
+
+**Parameters:**
+- `string` - A JSON string containing the card data
+
+**Returns:** A new `BankCardData` instance
+
+## Properties
+
+<ResponseField name="cardNumber" type="String?">
+  The bank card number. This field is optional and can be null.
+</ResponseField>
+
+<ResponseField name="cardExpiryDate" type="String?">
+  The expiry date of the bank card. This field is optional and can be null.
+</ResponseField>
+
+<ResponseField name="cvv" type="String?">
+  The Card Verification Value (CVV) - a security code printed on the card. This field is optional and can be null.
+</ResponseField>
+
+## Methods
+
+### toMap()
+
+Converts the `BankCardData` instance to a map.
+
+```dart
+Map<String, dynamic> toMap()
+```
+
+**Returns:** A map representation of the card data
+
+### toString()
+
+Converts the `BankCardData` instance to a JSON string.
+
+```dart
+String toString()
+```
+
+**Returns:** A JSON string representation of the card data
+
+## Usage Example
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+// Create a new BankCardData instance
+final cardData = BankCardData(
+  cardNumber: '4111111111111111',
+  cardExpiryDate: '12/25',
+  cvv: '123',
+);
+
+// Convert to JSON string
+final jsonString = cardData.toString();
+print(jsonString); // {"cardNumber":"4111111111111111","cardExpiryDate":"12/25","cvv":"123"}
+
+// Convert to map
+final cardMap = cardData.toMap();
+print(cardMap); // {cardNumber: 4111111111111111, cardExpiryDate: 12/25, cvv: 123}
+
+// Create from JSON
+final cardFromJson = BankCardData.fromJson({
+  'cardNumber': '4111111111111111',
+  'cardExpiryDate': '12/25',
+  'cvv': '123',
+});
+
+// Create from JSON string
+final jsonStr = '{"cardNumber":"4111111111111111","cardExpiryDate":"12/25","cvv":"123"}';
+final cardFromString = BankCardData.fromString(jsonStr);
+```
+
+## Security Notes
+
+<Warning>
+  Card data is sensitive information. Always ensure:
+  - Card data is transmitted over secure HTTPS connections
+  - Card information is not logged or stored insecurely
+  - PCI DSS compliance requirements are met when handling card data
+  - CVV values are never stored after transaction authorization
+</Warning>

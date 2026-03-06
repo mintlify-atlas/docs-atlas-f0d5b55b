@@ -1,0 +1,116 @@
+---
+title: Installation
+description: Add the Hubtel Merchant Checkout SDK to your Flutter project
+---
+
+## Prerequisites
+
+Before installing the SDK, ensure you have:
+
+- Flutter SDK version 3.9.2 or higher
+- A Hubtel merchant account with API credentials
+- Your merchant ID and API key (Base64 encoded)
+
+<Note>
+  If you don't have a Hubtel merchant account yet, visit [Hubtel](https://hubtel.com) to sign up and obtain your credentials.
+</Note>
+
+## Installation Methods
+
+The Hubtel Merchant Checkout SDK is currently available via GitHub. A pub.dev release is coming soon.
+
+<Steps>
+  <Step title="Open your pubspec.yaml file">
+    Locate the `pubspec.yaml` file in the root directory of your Flutter project.
+  </Step>
+
+  <Step title="Add the dependency">
+    Add the following lines to your `dependencies` section:
+
+    ```yaml
+    dependencies:
+      flutter:
+        sdk: flutter
+      
+      hubtel_merchant_checkout_sdk:
+        git:
+          url: https://github.com/hubtel/hubtel-mobile-flutter-merchant-checkout-sdk.git
+          ref: master
+    ```
+
+    <Info>
+      The `ref` parameter specifies the branch to use. You can also use a specific commit hash or tag for version pinning.
+    </Info>
+  </Step>
+
+  <Step title="Install the package">
+    Run the following command in your terminal:
+
+    ```bash
+    flutter pub get
+    ```
+
+    This will download and install the SDK along with all its dependencies.
+  </Step>
+
+  <Step title="Verify installation">
+    Ensure the installation was successful by checking your terminal output for any errors. You should see a message indicating that all packages were successfully retrieved.
+  </Step>
+</Steps>
+
+## Platform-Specific Setup
+
+The SDK works on both iOS and Android with minimal additional configuration.
+
+### Android
+
+No additional setup required. The SDK will work out of the box on Android devices.
+
+<Note>
+  Ensure your `minSdkVersion` in `android/app/build.gradle` is set to at least 21.
+</Note>
+
+### iOS
+
+No additional setup required. The SDK will work out of the box on iOS devices.
+
+<Note>
+  Ensure your iOS deployment target is set to at least iOS 12.0 in your `ios/Podfile`.
+</Note>
+
+## Dependencies
+
+The SDK automatically includes the following dependencies:
+
+- `provider` - State management
+- `webview_flutter` - For 3D Secure authentication
+- `intl` - Internationalization and formatting
+- `cached_network_image` - Efficient image loading
+- `pinput` - OTP input fields
+- `pdf` & `printing` - Receipt generation
+- `socket_io_client` - Real-time payment updates
+
+You don't need to add these manually; they'll be installed automatically with the SDK.
+
+## Import the Package
+
+Once installed, import the SDK in any Dart file where you want to use it:
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+```
+
+This single import gives you access to all the necessary classes and widgets:
+
+- `CheckoutScreen` - The main checkout UI widget
+- `HubtelCheckoutConfiguration` - Merchant configuration
+- `PurchaseInfo` - Purchase details
+- `ThemeConfig` - Customization options
+- `UnifiedCheckoutPaymentStatus` - Payment status enum
+- `CheckoutCompletionStatus` - Checkout result data
+
+## Next Steps
+
+<Card title="Quick Start Guide" icon="rocket" href="/quickstart">
+  Learn how to configure and use the SDK in your app with a complete example
+</Card>

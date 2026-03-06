@@ -1,0 +1,332 @@
+---
+title: 'Handling Payment Completion'
+description: 'Learn how to handle payment completion and process the checkout result in your Flutter app'
+icon: 'check-circle'
+---
+
+## Overview
+
+The Hubtel Merchant Checkout SDK returns a `CheckoutCompletionStatus` object when the checkout flow completes. This object contains information about the payment status, transaction ID, and payment channel used.
+
+## Navigating to Checkout
+
+To initiate a checkout and handle its completion, navigate to the `CheckoutScreen` and await the result:
+
+<Steps>
+  <Step title="Configure Checkout Parameters">
+    Create the required configuration objects:
+
+    ```dart
+    final hubtelConfig = HubtelCheckoutConfiguration(
+      merchantApiKey: "QTN1akQ1SzpiM2IxMjA1NTEwZmI0NjYzYTdiY2ZmZmUyNmQ1YmIzZA==",
+      merchantID: "1122334",
+      callbackUrl: "https://your-callback-url.com",
+    );
+
+    final purchaseInfo = PurchaseInfo(
+      amount: 100.0,
+      customerPhoneNumber: '0541234567',
+      clientReference: const Uuid().v4(),
+      purchaseDescription: 'Payment for Camera',
+    );
+    ```
+  </Step>
+
+  <Step title="Navigate to CheckoutScreen">
+    Use Flutter's `Navigator.push` to navigate to the checkout screen and await the result:
+
+    ```dart
+    final onCheckoutCompleted = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return CheckoutScreen(
+            purchaseInfo: purchaseInfo,
+            configuration: hubtelConfig,
+            themeConfig: ThemeConfig(primaryColor: Colors.blue),
+          );
+        },
+      ),
+    );
+    ```
+  </Step>
+
+  <Step title="Handle the Completion Status">
+    Check if the result is a `CheckoutCompletionStatus` and process it:
+
+    ```dart
+    if (onCheckoutCompleted is CheckoutCompletionStatus) {
+      // Handle the checkout completion
+      handlePaymentResult(onCheckoutCompleted);
+    }
+    ```
+  </Step>
+</Steps>
+
+## CheckoutCompletionStatus Object
+
+The `CheckoutCompletionStatus` class contains the following properties:
+
+```dart
+class CheckoutCompletionStatus {
+  UnifiedCheckoutPaymentStatus status;
+  String? paymentType;
+  String? paymentChannel;
+  String transactionId;
+}
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `status` | `UnifiedCheckoutPaymentStatus` | The payment status (success, failed, pending, etc.) |
+| `transactionId` | `String` | The unique transaction identifier |
+| `paymentChannel` | `String?` | The payment channel used (e.g., "mtn-gh", "visa") |
+| `paymentType` | `String?` | The payment type (e.g., "mobile-money", "card") |
+
+## Payment Status Values
+
+The `UnifiedCheckoutPaymentStatus` enum provides the following status values:
+
+<CardGroup cols={2}>
+  <Card title="paymentSuccess" icon="circle-check">
+    Payment was completed successfully
+  </Card>
+  <Card title="paymentFailed" icon="circle-xmark">
+    Payment transaction failed
+  </Card>
+  <Card title="pending" icon="clock">
+    Payment is pending (common with bank transfers)
+  </Card>
+  <Card title="userCancelledPayment" icon="xmark">
+    User closed the checkout without completing payment
+  </Card>
+  <Card title="unknown" icon="question">
+    Status cannot be determined
+  </Card>
+</CardGroup>
+
+## Complete Implementation Example
+
+Here's a complete example showing how to handle all payment statuses:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+import 'package:uuid/uuid.dart';
+
+class PaymentPage extends StatelessWidget {
+  const PaymentPage({Key? key}) : super(key: key);
+
+  Future<void> initiateCheckout(BuildContext context) async {
+    // Create configuration
+    final hubtelConfig = HubtelCheckoutConfiguration(
+      merchantApiKey: "YOUR_BASE64_ENCODED_API_KEY",
+      merchantID: "YOUR_MERCHANT_ID",
+      callbackUrl: "https://your-callback-url.com",
+    );
+
+    // Create purchase info
+    final purchaseInfo = PurchaseInfo(
+      amount: 50.0,
+      customerPhoneNumber: '0541234567',
+      clientReference: const Uuid().v4(),
+      purchaseDescription: 'Product Purchase',
+    );
+
+    // Navigate to checkout and await result
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutScreen(
+          purchaseInfo: purchaseInfo,
+          configuration: hubtelConfig,
+          themeConfig: ThemeConfig(primaryColor: Colors.teal),
+        ),
+      ),
+    );
+
+    // Handle the result
+    if (result is CheckoutCompletionStatus) {
+      handleCheckoutCompletion(context, result);
+    }
+  }
+
+  void handleCheckoutCompletion(
+    BuildContext context,
+    CheckoutCompletionStatus status,
+  ) {
+    switch (status.status) {
+      case UnifiedCheckoutPaymentStatus.paymentSuccess:
+        showSuccessDialog(
+          context,
+          transactionId: status.transactionId,
+          channel: status.paymentChannel,
+        );
+        break;
+
+      case UnifiedCheckoutPaymentStatus.paymentFailed:
+        showFailureDialog(
+          context,
+          transactionId: status.transactionId,
+        );
+        break;
+
+      case UnifiedCheckoutPaymentStatus.pending:
+        showPendingDialog(
+          context,
+          transactionId: status.transactionId,
+        );
+        break;
+
+      case UnifiedCheckoutPaymentStatus.userCancelledPayment:
+        showCancelledDialog(context);
+        break;
+
+      case UnifiedCheckoutPaymentStatus.unknown:
+        showUnknownStatusDialog(
+          context,
+          transactionId: status.transactionId,
+        );
+        break;
+    }
+  }
+
+  void showSuccessDialog(
+    BuildContext context, {
+    required String transactionId,
+    String? channel,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Payment Successful'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Transaction ID: $transactionId'),
+            if (channel != null) Text('Payment Channel: $channel'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showFailureDialog(BuildContext context, {required String transactionId}) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Payment Failed'),
+        content: Text(
+          'Your payment could not be completed. '
+          'Transaction ID: $transactionId',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showPendingDialog(BuildContext context, {required String transactionId}) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Payment Pending'),
+        content: Text(
+          'Your payment is being processed. '
+          'Transaction ID: $transactionId',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showCancelledDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Payment Cancelled'),
+        content: const Text('You cancelled the payment.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showUnknownStatusDialog(
+    BuildContext context,
+    {required String transactionId},
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Status Unknown'),
+        content: Text(
+          'Payment status could not be determined. '
+          'Please verify with transaction ID: $transactionId',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Payment')),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () => initiateCheckout(context),
+          child: const Text('Pay Now'),
+        ),
+      ),
+    );
+  }
+}
+```
+
+## Best Practices
+
+<Note>
+  Always check the payment status before proceeding with order fulfillment. A `paymentSuccess` status indicates the payment was completed successfully.
+</Note>
+
+<Warning>
+  Never rely solely on the client-side status. Always verify the payment on your backend using the transaction ID and Hubtel's payment verification APIs.
+</Warning>
+
+<Tip>
+  Store the `transactionId` in your database for future reference and reconciliation purposes.
+</Tip>
+
+## Next Steps
+
+- Learn how to [handle errors](/guides/error-handling) in the checkout flow
+- Explore [saved cards](/guides/saved-cards) functionality
+- Customize the [checkout UI](/guides/customizing-ui) to match your brand

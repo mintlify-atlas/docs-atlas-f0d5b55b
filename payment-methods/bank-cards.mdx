@@ -1,0 +1,439 @@
+---
+title: 'Bank Cards'
+description: 'Accept Visa, Mastercard, and other card payments with 3DS authentication'
+---
+
+## Overview
+
+The Hubtel Merchant Checkout SDK provides comprehensive support for bank card payments with built-in 3D Secure (3DS) authentication. The SDK handles card input validation, formatting, and secure payment processing.
+
+## Supported Card Types
+
+The SDK accepts all major card networks:
+
+<CardGroup cols={2}>
+  <Card title="Visa" icon="credit-card">
+    Debit and credit cards
+  </Card>
+  <Card title="Mastercard" icon="credit-card">
+    Debit and credit cards
+  </Card>
+  <Card title="Verve" icon="credit-card">
+    Nigerian card network
+  </Card>
+  <Card title="Other Networks" icon="credit-card">
+    Additional supported networks
+  </Card>
+</CardGroup>
+
+## Card Data Model
+
+Card information is encapsulated in the `BankCardData` class:
+
+```dart
+class BankCardData {
+  String? cardNumber;
+  String? cardExpiryDate;  // Format: MM/YY
+  String? cvv;
+  
+  BankCardData({this.cardNumber, this.cardExpiryDate, this.cvv});
+}
+```
+
+### Field Requirements
+
+- **cardNumber**: 13-19 digits (automatically formatted with spaces)
+- **cardExpiryDate**: MM/YY format
+- **cvv**: 3-4 digits (depending on card type)
+
+## Payment Flow
+
+<Steps>
+  <Step title="Card Entry">
+    Customer enters their card details (number, expiry date, CVV) in the checkout interface.
+  </Step>
+  
+  <Step title="Input Validation">
+    The SDK validates card details in real-time using built-in formatters.
+  </Step>
+  
+  <Step title="3DS Authentication Setup">
+    The SDK initiates 3D Secure authentication by calling the setup API.
+  </Step>
+  
+  <Step title="Customer Authentication">
+    Customer completes 3DS authentication (OTP or biometric verification).
+  </Step>
+  
+  <Step title="Payment Processing">
+    Once authenticated, the payment is processed securely.
+  </Step>
+  
+  <Step title="Confirmation">
+    Customer receives payment confirmation with transaction details.
+  </Step>
+</Steps>
+
+## 3D Secure (3DS) Authentication
+
+### Overview
+
+3D Secure adds an extra layer of security for card transactions. The SDK handles the entire 3DS flow automatically.
+
+### 3DS Setup Response
+
+When 3DS authentication is initiated, you receive a `Setup3dsResponse`:
+
+```dart
+class Setup3dsResponse {
+  final String? id;
+  final String? status;
+  final String? accessToken;
+  final String? referenceId;
+  final String? deviceDataCollectionUrl;
+  final String? clientReference;
+  final String? transactionId;
+  final String? html;  // HTML for 3DS challenge page
+}
+```
+
+### 3DS Enrollment
+
+The enrollment process is handled by `Enroll3dsResponse`:
+
+```dart
+class Enroll3dsResponse {
+  String? transactionId;
+  String? description;
+  String? clientReference;
+  double? amount;
+  double? charges;
+  String? customData;
+  String? jwt;              // JSON Web Token for authentication
+  String? html;             // HTML for authentication page
+  String? processor;        // Payment processor
+  String? cardStatus;       // Card enrollment status
+}
+```
+
+### OTP Verification
+
+For OTP-based 3DS authentication, customers enter a one-time password sent by their bank:
+
+<Info>
+  The OTP is typically sent via SMS to the phone number registered with the customer's bank.
+</Info>
+
+## Card Input Formatting
+
+The SDK provides automatic formatting for card inputs:
+
+### Card Number Formatter
+
+```dart
+import 'package:flutter/services.dart';
+
+class CardNumberInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.selection.baseOffset == 0) {
+      return newValue;
+    }
+
+    String inputData = newValue.text;
+    StringBuffer buffer = StringBuffer();
+
+    for (var i = 0; i < inputData.length; i++) {
+      buffer.write(inputData[i]);
+      int index = i + 1;
+
+      // Add space every 4 digits
+      if (index % 4 == 0 && inputData.length != index) {
+        buffer.write("  ");
+      }
+    }
+
+    return TextEditingValue(
+        text: buffer.toString(),
+        selection: TextSelection.collapsed(offset: buffer.toString().length));
+  }
+}
+```
+
+### Card Expiry Formatter
+
+```dart
+import 'package:flutter/services.dart';
+
+class CardExpiryFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final newValueString = newValue.text;
+    String valueToReturn = '';
+
+    for (int i = 0; i < newValueString.length; i++) {
+      if (newValueString[i] != '/') valueToReturn += newValueString[i];
+      var nonZeroIndex = i + 1;
+      final contains = valueToReturn.contains(RegExp(r'\/'));
+      
+      // Add slash after month
+      if (nonZeroIndex % 2 == 0 &&
+          nonZeroIndex != newValueString.length &&
+          !(contains)) {
+        valueToReturn += '/';
+      }
+    }
+    
+    return newValue.copyWith(
+      text: valueToReturn,
+      selection: TextSelection.fromPosition(
+        TextPosition(offset: valueToReturn.length),
+      ),
+    );
+  }
+}
+```
+
+## Usage Example
+
+### Basic Card Payment
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+// Configure checkout
+final purchaseInfo = PurchaseInfo(
+  amount: 100.00,
+  description: 'Payment for order #12345',
+);
+
+final config = HubtelCheckoutConfiguration(
+  merchantApiKey: 'your_api_key',
+  merchantID: 'your_merchant_id',
+  callbackUrl: 'https://your-callback-url.com',
+);
+
+// Launch checkout - SDK handles card input and 3DS
+final result = await HubtelCheckout.launch(
+  context: context,
+  purchaseInfo: purchaseInfo,
+  configuration: config,
+);
+
+if (result?.status == UnifiedCheckoutPaymentStatus.paid) {
+  print('Card payment successful: ${result?.transactionId}');
+}
+```
+
+### With Saved Cards
+
+You can pass previously saved cards for faster checkout:
+
+```dart
+// Prepare saved cards
+final savedCards = [
+  BankCardData(
+    cardNumber: '1234********7890',  // Masked card number
+    cardExpiryDate: '12/25',
+    // CVV required for saved cards
+  ),
+];
+
+// Launch checkout with saved cards
+final result = await HubtelCheckout.launch(
+  context: context,
+  purchaseInfo: purchaseInfo,
+  configuration: config,
+  savedBankCards: savedCards,  // Optional saved cards
+);
+```
+
+## Card Input Validation
+
+The SDK performs real-time validation:
+
+### Card Number Validation
+
+```dart
+// Invalid card number error
+static const invalidCardNumber = "Invalid card number";
+
+// Hint text for card input
+static const bankCardHintText = "1234 **** **** 7890";
+```
+
+### Expiry Date Validation
+
+```dart
+// Invalid date format error
+static const invalidDateFormat = "Invalid date format";
+
+// Expected format
+static const monthAndYearBankHint = "MM/YY";
+```
+
+### CVV Validation
+
+```dart
+// Invalid CVV error
+static const invalidCardCvv = "Invalid card cvv";
+
+// CVV is typically 3 digits (4 for Amex)
+```
+
+## Saving Cards for Future Use
+
+<Note>
+  Customers can save their cards for faster checkout in future transactions. The SDK securely stores card tokens, not actual card details.
+</Note>
+
+```dart
+// UI shows option to save card
+static const saveCardForFuture = "Save this card for future use";
+
+// When customer checks the option:
+// The SDK tokenizes the card and returns a token
+// Store this token securely in your backend
+```
+
+## Card Payment Options
+
+### New Card vs Saved Card
+
+The SDK provides options for both:
+
+```dart
+// Card selection options
+static const useNewCard = "Use a new card";
+static const useSavedCard = "Use a saved card";
+
+// Implementation
+bool useNewCard = true;
+
+if (useNewCard) {
+  // Show new card input form
+  // Customer enters full card details
+} else {
+  // Show saved cards
+  // Customer selects a saved card and enters CVV
+}
+```
+
+## WebView Integration
+
+For 3DS authentication, the SDK uses WebView to display the bank's authentication page:
+
+```dart
+import 'package:webview_flutter/webview_flutter.dart';
+
+// WebView handles:
+// 1. Device data collection
+// 2. 3DS challenge page
+// 3. Bank authentication interface
+
+final controller = WebViewController()
+  ..loadHtmlString(setup3dsResponse.html ?? "")
+  ..setJavaScriptMode(JavaScriptMode.unrestricted)
+  ..addJavaScriptChannel(
+    'TransactionComplete',
+    onMessageReceived: (message) {
+      // Handle transaction completion
+    },
+  );
+```
+
+## Ghana Card Verification
+
+For certain merchants, Ghana Card verification may be required:
+
+<Warning>
+  Ghana Card verification is required when `requireNationalID` is true in the channel configuration.
+</Warning>
+
+```dart
+// Check if verification is required
+if (channelResponse.requireNationalID == true) {
+  // Prompt for Ghana Card details
+  // Customer enters Ghana Card number (15 digits)
+}
+```
+
+## Best Practices
+
+<Tip>
+  **PCI Compliance**: The SDK handles card data securely. Never log or store raw card details in your application.
+</Tip>
+
+### Security Recommendations
+
+1. **Always use HTTPS** for callback URLs
+2. **Validate on backend** - Don't rely solely on client-side validation
+3. **Use tokenization** - Store card tokens, not card numbers
+4. **Implement webhooks** - Get real-time payment status updates
+
+### User Experience
+
+1. **Show card type icons** - Display Visa/Mastercard logos based on card number
+2. **Real-time validation** - Use the built-in formatters for better UX
+3. **Clear error messages** - Help users correct invalid inputs
+4. **Loading states** - Show progress during 3DS authentication
+
+## Error Handling
+
+```dart
+final result = await HubtelCheckout.launch(
+  context: context,
+  purchaseInfo: purchaseInfo,
+  configuration: config,
+);
+
+switch (result?.status) {
+  case UnifiedCheckoutPaymentStatus.paid:
+    // Payment successful
+    print('Transaction ID: ${result?.transactionId}');
+    break;
+    
+  case UnifiedCheckoutPaymentStatus.failed:
+    // Payment failed - card declined or 3DS failed
+    print('Payment failed');
+    break;
+    
+  case UnifiedCheckoutPaymentStatus.pending:
+    // Payment pending - 3DS in progress
+    print('Awaiting 3DS authentication');
+    break;
+    
+  default:
+    // Handle other statuses
+}
+```
+
+## Common Issues
+
+### 3DS Authentication Fails
+
+- Customer may have entered wrong OTP
+- Bank may have rejected the transaction
+- Network timeout during authentication
+
+### Card Declined
+
+- Insufficient funds
+- Card expired
+- Card blocked by issuing bank
+- Transaction flagged as suspicious
+
+### Integration Issues
+
+- Invalid merchant credentials
+- Callback URL not reachable
+- SSL certificate issues
+
+## Related Features
+
+- [Mobile Money](/payment-methods/mobile-money) - Alternative payment method
+- [Bank Pay](/payment-methods/bank-pay) - Cash and cheque payments
+- [Payment Status](/core-concepts/payment-status) - Track payment status
+- [Saved Cards](/guides/saved-cards) - Learn about saved card functionality

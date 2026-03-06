@@ -1,0 +1,83 @@
+---
+title: Introduction
+description: A powerful Flutter SDK for integrating Hubtel's merchant checkout and payment processing into your mobile applications
+---
+
+## Overview
+
+The Hubtel Merchant Checkout SDK for Flutter is a convenient and easy-to-use library that simplifies the process of implementing a complete checkout flow in your Flutter application. This SDK enables merchants to accept payments through multiple channels including mobile money, bank cards, and bank pay directly within their Flutter apps.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Multiple Payment Methods" icon="credit-card">
+    Support for mobile money (MTN, Vodafone, AirtelTigo), bank cards (Visa, Mastercard), and direct bank transfers
+  </Card>
+  
+  <Card title="Secure Transactions" icon="shield-check">
+    Built-in security with merchant API key authentication and 3D Secure support for card payments
+  </Card>
+  
+  <Card title="Customizable UI" icon="palette">
+    Flexible theming options to match your brand colors and styling preferences
+  </Card>
+  
+  <Card title="Real-time Status" icon="clock">
+    Instant payment status updates and webhook callbacks for transaction monitoring
+  </Card>
+  
+  <Card title="Easy Integration" icon="bolt">
+    Simple API with minimal configuration required to get started
+  </Card>
+  
+  <Card title="Receipt Generation" icon="receipt">
+    Automatic receipt generation and PDF download capabilities for completed transactions
+  </Card>
+</CardGroup>
+
+## Use Cases
+
+The Hubtel Merchant Checkout SDK is perfect for:
+
+- **E-commerce Apps** - Accept payments for products and services directly in your mobile app
+- **Service Marketplaces** - Enable peer-to-peer payments or vendor payouts
+- **Subscription Services** - Collect recurring payments with saved payment methods
+- **Event Ticketing** - Process ticket purchases with instant payment confirmation
+- **Utility Payments** - Facilitate bill payments and top-ups
+- **Food & Delivery Apps** - Seamless checkout experience for orders
+
+## How It Works
+
+The SDK provides a pre-built checkout screen that handles the entire payment flow:
+
+1. **Configure** - Set up your merchant credentials and callback URL
+2. **Initialize** - Create purchase information with amount and customer details
+3. **Present** - Navigate to the `CheckoutScreen` widget
+4. **Process** - Customer selects payment method and completes transaction
+5. **Complete** - Receive payment status and transaction details
+
+<Note>
+  The SDK handles all the complex payment processing, security, and UI interactions, allowing you to focus on your core business logic.
+</Note>
+
+## Payment Status Tracking
+
+The SDK provides comprehensive payment status tracking through the `UnifiedCheckoutPaymentStatus` enum:
+
+- `paymentSuccess` - Payment completed successfully
+- `paymentFailed` - Payment attempt failed
+- `pending` - Payment is being processed (e.g., bank transfers)
+- `userCancelledPayment` - User closed checkout without completing payment
+- `unknown` - Status could not be determined
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Add the SDK to your Flutter project
+  </Card>
+  
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running in minutes with our quick start guide
+  </Card>
+</CardGroup>

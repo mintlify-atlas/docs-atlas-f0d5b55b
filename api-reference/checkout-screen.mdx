@@ -1,0 +1,100 @@
+---
+title: "CheckoutScreen"
+description: "The main widget for displaying the Hubtel checkout interface"
+---
+
+## Overview
+
+`CheckoutScreen` is a `StatefulWidget` that provides the main checkout interface for processing payments. It handles the initialization of payment channels and displays the checkout UI with business information.
+
+## Constructor
+
+```dart
+CheckoutScreen({
+  Key? key,
+  required PurchaseInfo purchaseInfo,
+  required HubtelCheckoutConfiguration configuration,
+  List<BankCardData>? savedBankCards,
+  ThemeConfig? themeConfig,
+})
+```
+
+### Parameters
+
+<ParamField path="purchaseInfo" type="PurchaseInfo" required>
+  The purchase information including amount, customer phone number, description, and client reference.
+</ParamField>
+
+<ParamField path="configuration" type="HubtelCheckoutConfiguration" required>
+  The checkout configuration containing merchant credentials and callback URL.
+</ParamField>
+
+<ParamField path="savedBankCards" type="List<BankCardData>?">
+  Optional list of previously saved bank cards for quick checkout.
+</ParamField>
+
+<ParamField path="themeConfig" type="ThemeConfig?">
+  Optional theme configuration to customize the checkout UI appearance.
+</ParamField>
+
+<ParamField path="key" type="Key?">
+  Optional widget key for Flutter's widget tree.
+</ParamField>
+
+## Properties
+
+<ResponseField name="purchaseInfo" type="PurchaseInfo">
+  The purchase information for the current checkout session.
+</ResponseField>
+
+<ResponseField name="configuration" type="HubtelCheckoutConfiguration">
+  The merchant configuration for the checkout.
+</ResponseField>
+
+<ResponseField name="savedBankCards" type="List<BankCardData>?">
+  List of saved bank cards that can be used for payment.
+</ResponseField>
+
+<ResponseField name="themeConfig" type="ThemeConfig?">
+  The theme configuration for customizing the UI.
+</ResponseField>
+
+<ResponseField name="viewModel" type="CheckoutViewModel">
+  The view model that manages checkout business logic and state.
+</ResponseField>
+
+## Usage Example
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+class PaymentPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return CheckoutScreen(
+      purchaseInfo: PurchaseInfo(
+        amount: 100.0,
+        customerPhoneNumber: '0241234567',
+        purchaseDescription: 'Payment for services',
+        clientReference: 'ref-12345',
+      ),
+      configuration: HubtelCheckoutConfiguration(
+        merchantID: 'your-merchant-id',
+        merchantApiKey: 'your-api-key',
+        callbackUrl: 'https://your-callback-url.com',
+      ),
+      themeConfig: ThemeConfig(
+        primaryColor: Colors.blue,
+      ),
+    );
+  }
+}
+```
+
+## Notes
+
+- The `CheckoutScreen` automatically fetches available payment channels on initialization
+- A loading indicator is displayed while payment channels are being fetched
+- The checkout screen internally manages the payment flow state using `CheckoutViewModel`
+- If no `themeConfig` is provided, the default Hubtel teal color is used

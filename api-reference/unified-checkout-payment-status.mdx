@@ -1,0 +1,88 @@
+---
+title: "UnifiedCheckoutPaymentStatus"
+description: "Enum representing the status of a checkout payment transaction"
+---
+
+## Overview
+
+The `UnifiedCheckoutPaymentStatus` enum represents the various states a payment transaction can be in during the checkout process. It provides clear status indicators for tracking payment lifecycle events.
+
+## Definition
+
+```dart
+enum UnifiedCheckoutPaymentStatus {
+  paymentFailed,
+  paymentSuccess,
+  pending,
+  unknown,
+  userCancelledPayment
+}
+```
+
+## Enum Values
+
+### paymentFailed
+
+Indicates that the user performed a transaction but the payment failed. This occurs when there are issues processing the payment such as insufficient funds, network errors, or payment gateway rejections.
+
+### paymentSuccess
+
+Indicates that the user has successfully completed the payment. This is the desired outcome of a checkout transaction.
+
+### pending
+
+Indicates that a transaction is in progress. This status is typically returned when the user performs a bank pay transaction and the receipt is successfully downloaded, but final confirmation is still pending.
+
+### unknown
+
+Indicates an unknown payment state. This occurs when the user cancels the transaction after a payment attempt but before the status could be verified.
+
+### userCancelledPayment
+
+Indicates that the user closed the checkout page without performing any transaction. This represents an explicit user action to abandon the checkout process.
+
+## Usage Example
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+final checkoutResult = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: hubtelConfig,
+    ),
+  ),
+);
+
+if (checkoutResult is CheckoutCompletionStatus) {
+  switch (checkoutResult.status) {
+    case UnifiedCheckoutPaymentStatus.paymentSuccess:
+      print('Payment successful!');
+      // Handle successful payment
+      break;
+    case UnifiedCheckoutPaymentStatus.paymentFailed:
+      print('Payment failed');
+      // Handle failed payment
+      break;
+    case UnifiedCheckoutPaymentStatus.pending:
+      print('Payment is pending');
+      // Handle pending payment
+      break;
+    case UnifiedCheckoutPaymentStatus.userCancelledPayment:
+      print('User cancelled the payment');
+      // Handle cancellation
+      break;
+    case UnifiedCheckoutPaymentStatus.unknown:
+      print('Payment status unknown');
+      // Handle unknown status
+      break;
+  }
+}
+```
+
+## See Also
+
+- [CheckoutCompletionStatus](/api-reference/checkout-completion-status) - Contains the payment status along with transaction details
+- [PaymentStatus](/api-reference/payment-status) - Alternative payment status enum for other contexts

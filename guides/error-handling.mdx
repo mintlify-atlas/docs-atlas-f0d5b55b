@@ -1,0 +1,580 @@
+---
+title: 'Error Handling'
+description: 'Handle errors and payment failures gracefully in your Flutter app'
+icon: 'triangle-exclamation'
+---
+
+## Overview
+
+Proper error handling is crucial for providing a smooth user experience during the checkout process. The Hubtel Merchant Checkout SDK provides several ways to detect and handle errors, from payment failures to network issues.
+
+## Payment Status Errors
+
+The `UnifiedCheckoutPaymentStatus` enum includes status values that indicate various error conditions:
+
+```dart
+enum UnifiedCheckoutPaymentStatus {
+  paymentFailed,      // Payment transaction failed
+  paymentSuccess,     // Payment succeeded
+  pending,            // Payment is pending
+  unknown,            // Status cannot be determined
+  userCancelledPayment // User cancelled the checkout
+}
+```
+
+### Error Status Values
+
+<CardGroup cols={2}>
+  <Card title="paymentFailed" icon="circle-xmark">
+    The payment transaction was attempted but failed due to insufficient funds, declined card, or other payment issues.
+  </Card>
+  <Card title="userCancelledPayment" icon="xmark">
+    The user closed the checkout screen without completing the payment.
+  </Card>
+  <Card title="unknown" icon="question">
+    The payment status could not be determined. This may occur when the user cancels after initiating payment without checking the status.
+  </Card>
+  <Card title="pending" icon="clock">
+    The payment is being processed. While not an error, it requires special handling to inform the user.
+  </Card>
+</CardGroup>
+
+## Handling CheckoutCompletionStatus
+
+Always check the `status` property of the `CheckoutCompletionStatus` object returned by the checkout:
+
+```dart
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: hubtelConfig,
+    ),
+  ),
+);
+
+if (result is CheckoutCompletionStatus) {
+  switch (result.status) {
+    case UnifiedCheckoutPaymentStatus.paymentSuccess:
+      handleSuccess(result);
+      break;
+    
+    case UnifiedCheckoutPaymentStatus.paymentFailed:
+      handleFailure(result);
+      break;
+    
+    case UnifiedCheckoutPaymentStatus.userCancelledPayment:
+      handleCancellation();
+      break;
+    
+    case UnifiedCheckoutPaymentStatus.pending:
+      handlePending(result);
+      break;
+    
+    case UnifiedCheckoutPaymentStatus.unknown:
+      handleUnknownStatus(result);
+      break;
+  }
+}
+```
+
+## Common Payment Failure Scenarios
+
+### 1. Insufficient Funds
+
+```dart
+void handleInsufficientFunds(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Insufficient Funds'),
+      content: const Text(
+        'Your account does not have enough balance to complete this transaction. '
+        'Please add funds and try again.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
+```
+
+### 2. Card Declined
+
+```dart
+void handleCardDeclined(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Card Declined'),
+      content: const Text(
+        'Your card was declined. Please check your card details '
+        'or try a different payment method.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Try Again'),
+        ),
+      ],
+    ),
+  );
+}
+```
+
+### 3. Network Error
+
+```dart
+void handleNetworkError(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Network Error'),
+      content: const Text(
+        'Unable to connect to the payment service. '
+        'Please check your internet connection and try again.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Retry'),
+        ),
+      ],
+    ),
+  );
+}
+```
+
+## Complete Error Handling Example
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+import 'package:uuid/uuid.dart';
+
+class RobustCheckout extends StatefulWidget {
+  const RobustCheckout({Key? key}) : super(key: key);
+
+  @override
+  State<RobustCheckout> createState() => _RobustCheckoutState();
+}
+
+class _RobustCheckoutState extends State<RobustCheckout> {
+  bool isProcessing = false;
+  String? errorMessage;
+
+  Future<void> initiateCheckout() async {
+    setState(() {
+      isProcessing = true;
+      errorMessage = null;
+    });
+
+    try {
+      final hubtelConfig = HubtelCheckoutConfiguration(
+        merchantApiKey: "YOUR_BASE64_ENCODED_API_KEY",
+        merchantID: "YOUR_MERCHANT_ID",
+        callbackUrl: "https://your-callback-url.com",
+      );
+
+      final purchaseInfo = PurchaseInfo(
+        amount: 100.0,
+        customerPhoneNumber: '0541234567',
+        clientReference: const Uuid().v4(),
+        purchaseDescription: 'Product Purchase',
+      );
+
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CheckoutScreen(
+            purchaseInfo: purchaseInfo,
+            configuration: hubtelConfig,
+            themeConfig: ThemeConfig(primaryColor: Colors.teal),
+          ),
+        ),
+      );
+
+      setState(() => isProcessing = false);
+
+      if (result is CheckoutCompletionStatus) {
+        handleCheckoutResult(result);
+      } else {
+        // User dismissed without completing checkout
+        setState(() {
+          errorMessage = 'Checkout was cancelled';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isProcessing = false;
+        errorMessage = 'An unexpected error occurred: $e';
+      });
+      showErrorDialog('Unexpected Error', e.toString());
+    }
+  }
+
+  void handleCheckoutResult(CheckoutCompletionStatus status) {
+    switch (status.status) {
+      case UnifiedCheckoutPaymentStatus.paymentSuccess:
+        handlePaymentSuccess(status);
+        break;
+
+      case UnifiedCheckoutPaymentStatus.paymentFailed:
+        handlePaymentFailed(status);
+        break;
+
+      case UnifiedCheckoutPaymentStatus.userCancelledPayment:
+        handleUserCancelled();
+        break;
+
+      case UnifiedCheckoutPaymentStatus.pending:
+        handlePaymentPending(status);
+        break;
+
+      case UnifiedCheckoutPaymentStatus.unknown:
+        handleUnknownStatus(status);
+        break;
+    }
+  }
+
+  void handlePaymentSuccess(CheckoutCompletionStatus status) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.check_circle, color: Colors.green, size: 28),
+            SizedBox(width: 10),
+            Text('Payment Successful'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Transaction ID: ${status.transactionId}'),
+            if (status.paymentChannel != null)
+              Text('Payment Channel: ${status.paymentChannel}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to success screen or update order status
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void handlePaymentFailed(CheckoutCompletionStatus status) {
+    setState(() {
+      errorMessage = 'Payment failed - Transaction ID: ${status.transactionId}';
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.error, color: Colors.red, size: 28),
+            SizedBox(width: 10),
+            Text('Payment Failed'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your payment could not be completed. '
+              'Please try again or use a different payment method.',
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Transaction ID: ${status.transactionId}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              initiateCheckout(); // Retry
+            },
+            child: const Text('Try Again'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void handleUserCancelled() {
+    setState(() {
+      errorMessage = 'You cancelled the payment';
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Payment was cancelled'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+  }
+
+  void handlePaymentPending(CheckoutCompletionStatus status) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.access_time, color: Colors.orange, size: 28),
+            SizedBox(width: 10),
+            Text('Payment Pending'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your payment is being processed. '
+              'You will receive a notification once it is completed.',
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Transaction ID: ${status.transactionId}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void handleUnknownStatus(CheckoutCompletionStatus status) {
+    setState(() {
+      errorMessage = 'Payment status unknown - Transaction ID: ${status.transactionId}';
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.help, color: Colors.orange, size: 28),
+            SizedBox(width: 10),
+            Text('Status Unknown'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'We could not verify your payment status. '
+              'Please contact support with your transaction ID.',
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Transaction ID: ${status.transactionId}',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Contact support or verify transaction
+            },
+            child: const Text('Contact Support'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Robust Checkout')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (errorMessage != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.red.shade700),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        errorMessage!,
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ElevatedButton(
+              onPressed: isProcessing ? null : initiateCheckout,
+              child: isProcessing
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Start Checkout'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Always Handle All Cases" icon="list-check">
+    Handle all possible `UnifiedCheckoutPaymentStatus` values in your switch statement.
+  </Card>
+  <Card title="Store Transaction IDs" icon="database">
+    Save transaction IDs for failed payments to help with support and reconciliation.
+  </Card>
+  <Card title="Provide Clear Messages" icon="message">
+    Show user-friendly error messages that explain what went wrong and what to do next.
+  </Card>
+  <Card title="Enable Retry" icon="rotate-right">
+    Allow users to easily retry failed payments without re-entering all information.
+  </Card>
+</CardGroup>
+
+## Error Logging
+
+Log errors for debugging and monitoring:
+
+```dart
+import 'dart:developer' as developer;
+
+void logPaymentError(CheckoutCompletionStatus status) {
+  developer.log(
+    'Payment failed',
+    name: 'PaymentError',
+    error: {
+      'status': status.status.toString(),
+      'transactionId': status.transactionId,
+      'paymentChannel': status.paymentChannel,
+      'paymentType': status.paymentType,
+    },
+  );
+}
+```
+
+<Note>
+  Consider integrating error tracking services like Sentry or Firebase Crashlytics to monitor payment failures in production.
+</Note>
+
+## Server-Side Verification
+
+<Warning>
+  Always verify payment status on your backend using Hubtel's APIs. Client-side status should be treated as preliminary.
+</Warning>
+
+```dart
+Future<void> verifyPaymentOnBackend(String transactionId) async {
+  try {
+    final response = await http.post(
+      Uri.parse('https://your-backend.com/verify-payment'),
+      body: jsonEncode({'transactionId': transactionId}),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      // Process verified payment status
+    }
+  } catch (e) {
+    developer.log('Backend verification failed: $e');
+  }
+}
+```
+
+## Handling SDK Internal Errors
+
+The SDK may show error dialogs internally for issues like:
+- Network connectivity problems
+- Invalid configuration
+- API errors
+
+These are handled automatically by the SDK's error dialog system (from `widget_extensions.dart`):
+
+```dart
+// The SDK shows error dialogs internally
+widget.showCheckoutErrorDialog(
+  context: context,
+  message: 'Something went wrong while configuring business',
+);
+```
+
+<Tip>
+  Monitor your app's error logs to identify patterns in payment failures and improve the checkout experience.
+</Tip>
+
+## Next Steps
+
+- Learn about [handling payment completion](/guides/handling-payment-completion)
+- Explore [saved cards](/guides/saved-cards) functionality
+- Customize the [checkout UI](/guides/customizing-ui) to match your brand

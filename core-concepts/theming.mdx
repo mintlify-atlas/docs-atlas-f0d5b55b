@@ -1,0 +1,229 @@
+---
+title: 'Theming'
+description: 'Customize the checkout UI to match your brand'
+icon: 'palette'
+---
+
+The Hubtel Checkout SDK allows you to customize the appearance of the checkout interface to match your brand identity using the `ThemeConfig` class.
+
+## Overview
+
+The `ThemeConfig` class enables you to customize the primary color of the checkout interface, ensuring a seamless brand experience for your customers.
+
+## ThemeConfig Class
+
+The theme configuration class provides a simple way to apply your brand colors to the checkout flow.
+
+### Properties
+
+<ParamField path="primaryColor" type="Color" required>
+  The primary color that will be used throughout the checkout interface. This color will be applied to buttons, highlights, and other interactive elements.
+  
+  <Info>
+    Choose a color that provides good contrast with white text for optimal readability.
+  </Info>
+</ParamField>
+
+## Usage Example
+
+Here's how to create and apply a custom theme to your checkout:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+final themeConfig = ThemeConfig(primaryColor: Colors.black);
+```
+
+## Applying Theme to Checkout
+
+Pass the theme configuration when launching the checkout screen:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: hubtelConfig,
+      themeConfig: themeConfig, // Apply your custom theme
+    ),
+  ),
+);
+```
+
+## Complete Themed Checkout Example
+
+Here's a full example integrating custom theming with the checkout flow:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+import 'package:uuid/uuid.dart';
+
+class CheckoutPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Complete Purchase'),
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () => _launchCheckout(context),
+          child: Text('Pay Now'),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchCheckout(BuildContext context) async {
+    // Configure SDK
+    final hubtelConfig = HubtelCheckoutConfiguration(
+      merchantApiKey: "QTN1akQ1SzpiM2IxMjA1NTEwZmI0NjYzYTdiY2ZmZmUyNmQ1YmIzZA==",
+      merchantID: "1122334",
+      callbackUrl: "https://your-domain.com/payment/callback",
+    );
+
+    // Define purchase details
+    final purchaseInfo = PurchaseInfo(
+      amount: 50.00,
+      customerPhoneNumber: '0541234567',
+      clientReference: const Uuid().v4(),
+      purchaseDescription: 'Premium Subscription',
+    );
+
+    // Create custom theme
+    final themeConfig = ThemeConfig(primaryColor: Colors.black);
+
+    // Launch checkout with custom theme
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutScreen(
+          purchaseInfo: purchaseInfo,
+          configuration: hubtelConfig,
+          themeConfig: themeConfig,
+        ),
+      ),
+    );
+
+    // Handle result
+    if (result is CheckoutCompletionStatus) {
+      // Handle payment status
+    }
+  }
+}
+```
+
+## Brand Color Examples
+
+Here are some examples of how to use different brand colors:
+
+```dart
+// Using Material Design colors
+final tealTheme = ThemeConfig(primaryColor: Colors.teal);
+
+// Using custom hex colors
+final customTheme = ThemeConfig(primaryColor: Color(0xFF1A237E));
+
+// Using your app's existing theme color
+final appTheme = ThemeConfig(
+  primaryColor: Theme.of(context).primaryColor,
+);
+
+// Dark theme example
+final darkTheme = ThemeConfig(primaryColor: Colors.black);
+
+// Vibrant brand color
+final vibrantTheme = ThemeConfig(primaryColor: Color(0xFFE91E63));
+```
+
+## Default Theme
+
+If you don't provide a `ThemeConfig`, the checkout will use the default Hubtel teal color scheme.
+
+```dart
+// Without custom theme (uses default)
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: hubtelConfig,
+      // themeConfig is optional
+    ),
+  ),
+);
+```
+
+<Note>
+  The default primary color is teal (`HubtelColors.teal`), which provides a professional and trustworthy appearance.
+</Note>
+
+## Theme Customization Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Brand Consistency" icon="swatchbook">
+    Use your app's primary brand color to create a consistent experience throughout the user journey.
+  </Card>
+  
+  <Card title="Contrast Ratio" icon="eye">
+    Ensure your primary color has sufficient contrast with white text (minimum 4.5:1 ratio) for accessibility.
+  </Card>
+  
+  <Card title="Color Psychology" icon="brain">
+    Choose colors that inspire trust and confidence, such as blues, greens, or professional dark colors.
+  </Card>
+  
+  <Card title="Testing" icon="flask">
+    Test your theme on different devices and screen sizes to ensure it looks good everywhere.
+  </Card>
+</CardGroup>
+
+## Accessibility Considerations
+
+<Warning>
+  When selecting your primary color, consider users with color vision deficiencies. Avoid relying solely on color to convey important information.
+</Warning>
+
+<Tip>
+  Use tools like the WebAIM Contrast Checker to verify your color choices meet WCAG accessibility guidelines.
+</Tip>
+
+## What Gets Themed?
+
+The primary color you specify affects:
+
+- Action buttons (Pay, Continue, Confirm)
+- Selected states for payment methods
+- Progress indicators and loading states
+- Active input field borders
+- Interactive elements and highlights
+- Navigation elements
+
+## Advanced Theme Integration
+
+Integrate the checkout theme with your app's existing theme system:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+class BrandedCheckout {
+  static ThemeConfig getCheckoutTheme(BuildContext context) {
+    // Extract primary color from your app's theme
+    final appPrimaryColor = Theme.of(context).primaryColor;
+    
+    return ThemeConfig(primaryColor: appPrimaryColor);
+  }
+}
+
+// Usage
+final themeConfig = BrandedCheckout.getCheckoutTheme(context);
+```
+
+This ensures the checkout always matches your app's current theme, even if it changes dynamically.

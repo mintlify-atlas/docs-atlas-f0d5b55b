@@ -1,0 +1,86 @@
+---
+title: "PaymentStatus"
+description: "Enum representing the current state of a payment transaction"
+---
+
+## Overview
+
+The `PaymentStatus` enum represents the various states a payment can be in throughout its lifecycle. This enum is used to track and communicate the current status of payment transactions.
+
+## Definition
+
+```dart
+enum PaymentStatus {
+  unpaid,
+  paid,
+  pending,
+  unspecified,
+  expired,
+  failed
+}
+```
+
+## Enum Values
+
+### unpaid
+
+Indicates that the payment has not been made yet. This is typically the initial state of a payment transaction.
+
+### paid
+
+Indicates that the payment has been successfully completed and confirmed.
+
+### pending
+
+Indicates that the payment is currently being processed and awaiting confirmation.
+
+### unspecified
+
+Indicates that the payment status could not be determined or has not been set.
+
+### expired
+
+Indicates that the payment transaction has expired without being completed. This typically occurs when a payment request times out.
+
+### failed
+
+Indicates that the payment transaction failed to complete successfully.
+
+## Usage Example
+
+```dart
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+void handlePaymentStatus(PaymentStatus status) {
+  switch (status) {
+    case PaymentStatus.paid:
+      print('Payment has been completed');
+      // Process successful payment
+      break;
+    case PaymentStatus.pending:
+      print('Payment is being processed');
+      // Show loading or waiting state
+      break;
+    case PaymentStatus.failed:
+      print('Payment failed');
+      // Handle failure and possibly retry
+      break;
+    case PaymentStatus.expired:
+      print('Payment request has expired');
+      // Prompt user to create new payment
+      break;
+    case PaymentStatus.unpaid:
+      print('Payment has not been made');
+      // Prompt user to make payment
+      break;
+    case PaymentStatus.unspecified:
+      print('Payment status is unknown');
+      // Handle uncertain state
+      break;
+  }
+}
+```
+
+## See Also
+
+- [UnifiedCheckoutPaymentStatus](/api-reference/unified-checkout-payment-status) - Status enum specific to checkout completion

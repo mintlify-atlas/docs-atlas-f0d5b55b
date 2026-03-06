@@ -1,0 +1,207 @@
+---
+title: 'Payment Status'
+description: 'Handle different payment outcomes in your checkout flow'
+icon: 'circle-check'
+---
+
+The Hubtel Checkout SDK provides detailed payment status information through the `UnifiedCheckoutPaymentStatus` enum and `CheckoutCompletionStatus` class to help you handle different payment outcomes.
+
+## UnifiedCheckoutPaymentStatus Enum
+
+This enum represents all possible payment outcomes from the checkout process.
+
+### Status Values
+
+<ParamField path="paymentSuccess" type="enum">
+  The payment was completed successfully. The customer has been charged and you can proceed with order fulfillment.
+  
+  <Info>
+    Always verify the payment on your backend before fulfilling the order, even when receiving this status.
+  </Info>
+</ParamField>
+
+<ParamField path="paymentFailed" type="enum">
+  The payment attempt failed. This could be due to insufficient funds, network issues, or the customer declining the charge.
+  
+  <Note>
+    Show a friendly error message and allow the customer to try again with a different payment method.
+  </Note>
+</ParamField>
+
+<ParamField path="userCancelledPayment" type="enum">
+  The user closed the checkout page or explicitly cancelled the payment before completing any transaction.
+  
+  <Tip>
+    You may want to ask the user if they encountered any issues or offer assistance.
+  </Tip>
+</ParamField>
+
+<ParamField path="pending" type="enum">
+  The payment is pending confirmation. This typically occurs with bank pay transactions where a receipt has been successfully downloaded but final confirmation is awaited.
+  
+  <Warning>
+    Do not fulfill the order until the payment status changes to `paymentSuccess` and is confirmed via your callback URL.
+  </Warning>
+</ParamField>
+
+<ParamField path="unknown" type="enum">
+  The payment status could not be determined. This occurs when the user cancels the transaction after a payment attempt but before checking the final status.
+  
+  <Info>
+    Poll your backend or Hubtel's API to determine the actual payment status before taking action.
+  </Info>
+</ParamField>
+
+## CheckoutCompletionStatus Class
+
+This class provides detailed information about the completed checkout session.
+
+### Properties
+
+<ParamField path="status" type="UnifiedCheckoutPaymentStatus" required>
+  The final payment status from the enum values described above.
+</ParamField>
+
+<ParamField path="transactionId" type="String" required>
+  A unique identifier for this transaction. Use this to track the payment in Hubtel's system and your own records.
+</ParamField>
+
+<ParamField path="paymentType" type="String?" optional>
+  The type of payment method used (e.g., "mobile_money", "card", "bank_pay").
+</ParamField>
+
+<ParamField path="paymentChannel" type="String?" optional>
+  The specific payment channel or provider used (e.g., "MTN", "Vodafone", "Visa").
+</ParamField>
+
+## Handling Payment Status
+
+Here's how to handle the checkout completion result:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => CheckoutScreen(
+      purchaseInfo: purchaseInfo,
+      configuration: hubtelConfig,
+    ),
+  ),
+);
+
+if (result is CheckoutCompletionStatus) {
+  switch (result.status) {
+    case UnifiedCheckoutPaymentStatus.paymentSuccess:
+      // Payment successful - show success message
+      _showSuccessDialog(
+        'Payment completed successfully!',
+        'Transaction ID: ${result.transactionId}',
+      );
+      // Verify payment on backend and fulfill order
+      await _verifyAndFulfillOrder(result.transactionId);
+      break;
+      
+    case UnifiedCheckoutPaymentStatus.paymentFailed:
+      // Payment failed - show error message
+      _showErrorDialog(
+        'Payment failed',
+        'Your payment could not be processed. Please try again.',
+      );
+      break;
+      
+    case UnifiedCheckoutPaymentStatus.userCancelledPayment:
+      // User cancelled - show cancellation message
+      _showInfoDialog(
+        'Payment cancelled',
+        'You cancelled the payment. Your cart is still available.',
+      );
+      break;
+      
+    case UnifiedCheckoutPaymentStatus.pending:
+      // Payment pending - show pending message
+      _showPendingDialog(
+        'Payment pending',
+        'Your payment is being processed. Transaction ID: ${result.transactionId}',
+      );
+      // Start polling for payment confirmation
+      await _pollPaymentStatus(result.transactionId);
+      break;
+      
+    case UnifiedCheckoutPaymentStatus.unknown:
+      // Status unknown - check with backend
+      _showWarningDialog(
+        'Checking payment status',
+        'Please wait while we verify your payment...',
+      );
+      await _verifyPaymentStatus(result.transactionId);
+      break;
+  }
+}
+```
+
+## Payment Status Flow
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+
+Future<void> launchCheckout(BuildContext context) async {
+  final onCheckoutCompleted = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => CheckoutScreen(
+        purchaseInfo: purchaseInfo,
+        configuration: hubtelConfig,
+        themeConfig: themeConfig,
+      ),
+    ),
+  );
+
+  if (onCheckoutCompleted is CheckoutCompletionStatus) {
+    // Handle the payment status
+    await handlePaymentStatus(onCheckoutCompleted);
+  }
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Always Verify" icon="shield-check">
+    Never rely solely on the client-side status. Always verify payment status through your backend and Hubtel's API.
+  </Card>
+  
+  <Card title="Handle All Cases" icon="list-check">
+    Implement handlers for all possible status values to provide appropriate feedback to users.
+  </Card>
+  
+  <Card title="Store Transaction ID" icon="database">
+    Save the transaction ID to your database for reconciliation and customer support purposes.
+  </Card>
+  
+  <Card title="Webhook Integration" icon="webhook">
+    Implement webhook handling at your callback URL for real-time payment status updates.
+  </Card>
+</CardGroup>
+
+<Warning>
+  **Security Note**: Do not fulfill orders or grant access based solely on the client-side payment status. Always verify the payment through your backend callback URL or by querying Hubtel's payment verification API.
+</Warning>
+
+## Testing Payment Flows
+
+<Tip>
+  When testing your integration, simulate all possible payment statuses to ensure your app handles each case gracefully:
+  - Successful payments
+  - Failed payments (insufficient funds)
+  - User cancellations at different stages
+  - Pending payments (especially for bank transfers)
+  - Network timeouts and unknown statuses
+</Tip>
+
+## Next Steps
+
+Learn how to customize the checkout appearance with [Theming](/core-concepts/theming) options.

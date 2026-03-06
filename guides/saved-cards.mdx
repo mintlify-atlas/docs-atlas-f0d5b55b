@@ -1,0 +1,287 @@
+---
+title: 'Saved Cards'
+description: 'Enable users to save their bank cards for faster checkout in future transactions'
+icon: 'credit-card'
+---
+
+## Overview
+
+The Hubtel Merchant Checkout SDK allows you to provide saved bank cards to the checkout flow, enabling faster payments for returning customers. Users can select from previously saved cards without re-entering their full card details.
+
+## BankCardData Model
+
+The `BankCardData` class represents a saved bank card with the following structure:
+
+```dart
+class BankCardData {
+  String? cardNumber;
+  String? cardExpiryDate;
+  String? cvv;
+
+  BankCardData({
+    this.cardNumber,
+    this.cardExpiryDate,
+    this.cvv,
+  });
+}
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `cardNumber` | `String?` | The masked or full card number (e.g., "4111111111111111") |
+| `cardExpiryDate` | `String?` | Card expiry in MM/YY format (e.g., "12/25") |
+| `cvv` | `String?` | Card CVV (typically not stored for security) |
+
+<Warning>
+  For security and PCI compliance, avoid storing the full card number and CVV. Only store masked card numbers (e.g., "**** **** **** 1234") and always require users to re-enter the CVV.
+</Warning>
+
+## Passing Saved Cards to CheckoutScreen
+
+You can pass a list of saved cards to the `CheckoutScreen` using the `savedBankCards` parameter:
+
+<Steps>
+  <Step title="Retrieve Saved Cards">
+    Fetch the user's saved cards from your secure storage:
+
+    ```dart
+    // Example: Retrieve saved cards from your backend
+    Future<List<BankCardData>> getSavedCards() async {
+      // Your implementation to fetch saved cards
+      // This should be stored securely on your backend
+      return [
+        BankCardData(
+          cardNumber: '**** **** **** 1234',
+          cardExpiryDate: '12/25',
+          cvv: null, // Never store CVV
+        ),
+        BankCardData(
+          cardNumber: '**** **** **** 5678',
+          cardExpiryDate: '06/26',
+          cvv: null,
+        ),
+      ];
+    }
+    ```
+  </Step>
+
+  <Step title="Pass Cards to CheckoutScreen">
+    Include the saved cards when navigating to the checkout:
+
+    ```dart
+    // Retrieve saved cards
+    final savedCards = await getSavedCards();
+
+    // Navigate to checkout with saved cards
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutScreen(
+          purchaseInfo: purchaseInfo,
+          configuration: hubtelConfig,
+          savedBankCards: savedCards, // Pass saved cards here
+          themeConfig: themeConfig,
+        ),
+      ),
+    );
+    ```
+  </Step>
+</Steps>
+
+## How Saved Cards are Displayed
+
+When you provide saved cards to the `CheckoutScreen`, they are displayed in the bank card payment section. The SDK:
+
+1. Shows a toggle allowing users to choose between saved cards and entering a new card
+2. Displays saved cards in a list with masked card numbers
+3. Requests the CVV for the selected saved card before processing payment
+4. Allows users to add a new card if they prefer
+
+<Info>
+  The SDK automatically merges cards saved internally (using the SDK's local storage) with cards you provide via the `savedBankCards` parameter.
+</Info>
+
+## Complete Implementation Example
+
+Here's a full example showing how to implement saved cards:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:hubtel_merchant_checkout_sdk/hubtel_merchant_checkout_sdk.dart';
+import 'package:uuid/uuid.dart';
+
+class CheckoutWithSavedCards extends StatefulWidget {
+  const CheckoutWithSavedCards({Key? key}) : super(key: key);
+
+  @override
+  State<CheckoutWithSavedCards> createState() => _CheckoutWithSavedCardsState();
+}
+
+class _CheckoutWithSavedCardsState extends State<CheckoutWithSavedCards> {
+  List<BankCardData>? savedCards;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadSavedCards();
+  }
+
+  Future<void> loadSavedCards() async {
+    // Simulate fetching saved cards from your backend
+    await Future.delayed(const Duration(seconds: 1));
+
+    setState(() {
+      savedCards = [
+        BankCardData(
+          cardNumber: '**** **** **** 1234',
+          cardExpiryDate: '12/25',
+          cvv: null, // Never store CVV
+        ),
+        BankCardData(
+          cardNumber: '**** **** **** 5678',
+          cardExpiryDate: '06/26',
+          cvv: null,
+        ),
+      ];
+      isLoading = false;
+    });
+  }
+
+  Future<void> startCheckout() async {
+    final hubtelConfig = HubtelCheckoutConfiguration(
+      merchantApiKey: "YOUR_BASE64_ENCODED_API_KEY",
+      merchantID: "YOUR_MERCHANT_ID",
+      callbackUrl: "https://your-callback-url.com",
+    );
+
+    final purchaseInfo = PurchaseInfo(
+      amount: 100.0,
+      customerPhoneNumber: '0541234567',
+      clientReference: const Uuid().v4(),
+      purchaseDescription: 'Product Purchase',
+    );
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutScreen(
+          purchaseInfo: purchaseInfo,
+          configuration: hubtelConfig,
+          savedBankCards: savedCards, // Pass saved cards
+          themeConfig: ThemeConfig(primaryColor: Colors.teal),
+        ),
+      ),
+    );
+
+    if (result is CheckoutCompletionStatus) {
+      handleCheckoutResult(result);
+    }
+  }
+
+  void handleCheckoutResult(CheckoutCompletionStatus status) {
+    if (status.status == UnifiedCheckoutPaymentStatus.paymentSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Payment successful! Transaction ID: ${status.transactionId}',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Checkout with Saved Cards')),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'You have ${savedCards?.length ?? 0} saved card(s)',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: startCheckout,
+                    child: const Text('Proceed to Checkout'),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}
+```
+
+## SDK Internal Card Storage
+
+The SDK also provides internal card storage functionality. When users check the "Save card for future use" option during checkout, the SDK automatically stores the card details locally.
+
+<Note>
+  The SDK's internal storage is handled by the `CheckoutViewModel` class which uses the `CheckoutPrefManager` for local persistence.
+</Note>
+
+### Accessing SDK-Stored Cards
+
+The SDK automatically retrieves internally stored cards and displays them alongside any cards you provide via `savedBankCards`:
+
+```dart
+// From the SDK source (checkout_home_screen.dart)
+void getBankCards() async {
+  final cards = await viewModel.getBankWallets();
+  
+  if (widget.savedBankCards?.isNotEmpty ?? false) {
+    savedCards = widget.savedBankCards ?? [];
+  }
+
+  if (cards?.isNotEmpty == true) {
+    savedCards = cards! + (widget.savedBankCards ?? []);
+  }
+  setState(() {});
+}
+```
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Never Store CVV" icon="shield-halved">
+    Always set `cvv` to `null`. PCI compliance requires users to enter the CVV for each transaction.
+  </Card>
+  <Card title="Mask Card Numbers" icon="eye-slash">
+    Store only masked card numbers (e.g., "**** **** **** 1234") in your database.
+  </Card>
+  <Card title="Secure Backend Storage" icon="lock">
+    Store card details on your secure backend, not in local device storage.
+  </Card>
+  <Card title="Encrypt Data" icon="key">
+    Use encryption for storing and transmitting card information.
+  </Card>
+</CardGroup>
+
+<Warning>
+  Storing full card details may require PCI DSS certification. Consider using tokenization services or Hubtel's card storage APIs instead.
+</Warning>
+
+## User Experience Tips
+
+<Tip>
+  Display the card brand (Visa, Mastercard, etc.) alongside masked card numbers to help users quickly identify their cards.
+</Tip>
+
+<Tip>
+  Allow users to delete saved cards from your app's settings for better control over their payment methods.
+</Tip>
+
+## Next Steps
+
+- Learn about [handling payment completion](/guides/handling-payment-completion)
+- Explore [error handling](/guides/error-handling) strategies
+- Customize the [checkout UI](/guides/customizing-ui)
